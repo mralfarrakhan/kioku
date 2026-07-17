@@ -1,0 +1,12 @@
+{
+	"mcpServers": {
+		"svelte": {
+			"command": "bunx",
+			"args": ["-y", "@sveltejs/mcp"]
+		},
+		"playwright": {
+			"command": "bunx",
+			"args": ["@playwright/mcp@latest"]
+		}
+	}
+}
