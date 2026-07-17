@@ -15,8 +15,7 @@
 			"binding": "DB",
 			"database_name": "munarhringr-db",
 			"database_id": "0db8db1c-6d4b-4a82-b483-698bb53f8c71",
-			"migrations_dir": "drizzle",
-			"remote": true
+			"migrations_dir": "drizzle"
 		}
 	]
 }
