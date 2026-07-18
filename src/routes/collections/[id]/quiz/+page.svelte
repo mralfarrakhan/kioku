@@ -23,6 +23,10 @@
 	let newScore = $state<number | null>(null);
 	let fluencyChange = $state<number | null>(null);
 
+	let displayProgress = $state<number>(0);
+	let displayLevel = $state<number>(0);
+	let ringTransition = $state('stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)');
+
 	async function handleOptionClick(option: string) {
 		if (selectedOption !== null) return; // Prevent double-clicking
 
@@ -47,12 +51,43 @@
 		});
 
 		const result = deserialize(await response.text());
+		let delayBeforeNext = isCorrect ? 1500 : 2500;
+
 		if (result.type === 'success' && result.data) {
 			oldScore = result.data.oldScore as number;
+			
+			ringTransition = 'none';
+			displayProgress = oldScore % 100;
+			displayLevel = Math.floor(oldScore / 100);
+
 			// short delay so the ring renders at the old score first, then animates to the new score
 			setTimeout(() => {
 				newScore = result.data?.newScore as number;
-				fluencyChange = (result.data?.newScore as number) - (result.data?.oldScore as number);
+				const oldSc = oldScore as number;
+				fluencyChange = newScore - oldSc;
+
+				const newLevel = Math.floor(newScore / 100);
+				const newProgress = newScore % 100;
+
+				ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+
+				if (newLevel !== displayLevel) {
+					delayBeforeNext += 1000; // Give extra time for multi-phase animation
+					displayProgress = newLevel > displayLevel ? 100 : 0;
+					
+					setTimeout(() => {
+						ringTransition = 'none';
+						displayProgress = newLevel > displayLevel ? 0 : 100;
+						displayLevel = newLevel;
+						
+						setTimeout(() => {
+							ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+							displayProgress = newProgress;
+						}, 50);
+					}, 800); // Wait for first phase of animation
+				} else {
+					displayProgress = newProgress;
+				}
 			}, 50);
 		}
 
@@ -67,8 +102,8 @@
 				fluencyChange = null;
 				questionStartTime = Date.now();
 			},
-			isCorrect ? 1500 : 2500
-		); // 1.5s/2.5s to see the animation
+			delayBeforeNext
+		);
 	}
 </script>
 
@@ -179,9 +214,6 @@
 						</div>
 
 						{#if oldScore !== null}
-							{@const currentTotal = newScore !== null ? newScore : oldScore}
-							{@const currentProgress = currentTotal % 100}
-							{@const currentLevel = Math.floor(currentTotal / 100)}
 							<div
 								class="animate-fade-in flex items-center gap-3 border-l-2 border-gray-100 pl-6 dark:border-gray-800"
 							>
@@ -203,20 +235,20 @@
 											cy="18"
 											r="15"
 											fill="none"
-											class={currentLevel >= 3
+											class={displayLevel >= 3
 												? 'stroke-green-500'
-												: currentLevel >= 1
+												: displayLevel >= 1
 													? 'stroke-blue-500'
 													: 'stroke-yellow-400'}
 											stroke-width="4"
 											stroke-dasharray="94.2"
-											stroke-dashoffset={94.2 - (currentProgress / 100) * 94.2}
+											stroke-dashoffset={94.2 - (displayProgress / 100) * 94.2}
 											stroke-linecap="round"
-											style="transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);"
+											style="transition: {ringTransition};"
 										></circle>
 									</svg>
 									<span class="relative text-xs font-bold text-gray-700 dark:text-gray-300">
-										Lv.{currentLevel}
+										Lv.{displayLevel}
 									</span>
 								</div>
 								{#if fluencyChange !== null}
