@@ -9,8 +9,8 @@
 
 <div class="mb-8 flex items-center justify-between">
 	<div>
-		<h1 class="text-3xl font-extrabold text-gray-900">Collections</h1>
-		<p class="mt-1 text-gray-500">Learn and review your flashcards</p>
+		<h1 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100">Collections</h1>
+		<p class="mt-1 text-gray-500 dark:text-gray-400">Learn and review your flashcards</p>
 	</div>
 	<button
 		onclick={() => (showCreateModal = true)}
@@ -22,8 +22,8 @@
 
 {#if showCreateModal}
 	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-		<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-			<h2 class="mb-4 text-xl font-bold text-gray-900">Create Collection</h2>
+		<div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800">
+			<h2 class="mb-4 text-xl font-bold text-gray-900 dark:text-gray-100">Create Collection</h2>
 			<form
 				method="post"
 				action="?/createCollection"
@@ -35,20 +35,22 @@
 				}}
 			>
 				<div class="mb-4">
-					<label class="block text-sm font-semibold text-gray-700">Title</label>
+					<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Title</label>
 					<input
 						type="text"
 						name="title"
 						required
-						class="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+						class="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
 						placeholder="e.g. Japanese Vocab"
 					/>
 				</div>
 				<div class="mb-4">
-					<label class="block text-sm font-semibold text-gray-700">Description</label>
+					<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
+						>Description</label
+					>
 					<textarea
 						name="description"
-						class="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+						class="mt-1 w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
 						placeholder="Optional..."></textarea>
 				</div>
 				<div class="mb-6 flex items-center">
@@ -56,9 +58,11 @@
 						type="checkbox"
 						name="isShared"
 						id="isShared"
-						class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+						class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
 					/>
-					<label for="isShared" class="ml-2 block text-sm font-semibold text-gray-700"
+					<label
+						for="isShared"
+						class="ml-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
 						>Make Public (Shared)</label
 					>
 				</div>
@@ -66,7 +70,7 @@
 					<button
 						type="button"
 						onclick={() => (showCreateModal = false)}
-						class="rounded-xl bg-gray-100 px-4 py-2 font-bold text-gray-600 hover:bg-gray-200"
+						class="rounded-xl bg-gray-100 px-4 py-2 font-bold text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 					>
 						Cancel
 					</button>
@@ -83,20 +87,24 @@
 {/if}
 
 {#if data.collections.length === 0}
-	<div class="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-12 text-center">
-		<h3 class="text-xl font-bold text-gray-700">No collections yet!</h3>
-		<p class="mt-2 text-gray-500">Create one or discover shared collections.</p>
+	<div
+		class="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-12 text-center dark:border-gray-700 dark:bg-gray-900"
+	>
+		<h3 class="text-xl font-bold text-gray-700 dark:text-gray-300">No collections yet!</h3>
+		<p class="mt-2 text-gray-500 dark:text-gray-400">Create one or discover shared collections.</p>
 	</div>
 {:else}
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each data.collections as collection}
 			<a
 				href="/collections/{collection.id}"
-				class="group relative flex flex-col justify-between rounded-2xl border-2 border-gray-100 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+				class="group relative flex flex-col justify-between rounded-2xl border-2 border-gray-100 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md dark:border-gray-800 dark:bg-gray-800 dark:hover:border-blue-500"
 			>
 				<div>
 					<div class="mb-2 flex items-start justify-between">
-						<h3 class="text-xl font-bold text-gray-900 group-hover:text-blue-600">
+						<h3
+							class="text-xl font-bold text-gray-900 group-hover:text-blue-600 dark:text-gray-100 dark:group-hover:text-blue-400"
+						>
 							{collection.title}
 						</h3>
 						{#if collection.isShared}
@@ -106,17 +114,23 @@
 						{/if}
 					</div>
 					{#if collection.description}
-						<p class="line-clamp-2 text-sm text-gray-500">{collection.description}</p>
+						<p class="line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
+							{collection.description}
+						</p>
 					{/if}
 				</div>
 
-				<div class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+				<div
+					class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700"
+				>
 					<div class="flex flex-col gap-0.5">
 						<span class="text-xs font-semibold text-gray-400">
 							{#if collection.userId === data.user.id}
 								Yours
 							{:else}
-								By <span class="text-gray-600">{collection.authorName || 'Unknown'}</span>
+								By <span class="text-gray-600 dark:text-gray-300"
+									>{collection.authorName || 'Unknown'}</span
+								>
 							{/if}
 						</span>
 						<span
@@ -141,7 +155,7 @@
 							<input type="hidden" name="id" value={collection.id} />
 							<button
 								type="submit"
-								class="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+								class="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 dark:hover:text-red-400"
 								onclick={(e) => e.stopPropagation()}
 							>
 								<svg

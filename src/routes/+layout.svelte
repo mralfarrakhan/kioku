@@ -2,14 +2,19 @@
 	import './layout.css';
 	import type { LayoutServerData } from './$types';
 	import { page } from '$app/state';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	let { data, children }: { data: LayoutServerData; children: import('svelte').Snippet } = $props();
 </script>
 
 {#if data.user}
-	<div class="flex h-screen w-full flex-col bg-gray-50 text-gray-900 md:flex-row">
+	<div
+		class="flex h-screen w-full flex-col bg-gray-50 text-gray-900 transition-colors duration-200 md:flex-row dark:bg-gray-950 dark:text-gray-100"
+	>
 		<!-- Desktop Sidebar -->
-		<aside class="hidden w-64 flex-col border-r border-gray-200 bg-white p-6 md:flex">
+		<aside
+			class="hidden w-64 flex-col border-r border-gray-200 bg-white p-6 transition-colors duration-200 md:flex dark:border-gray-800 dark:bg-gray-900"
+		>
 			<div class="mb-8 flex items-center gap-2 text-2xl font-bold text-blue-600">
 				<span>Kioku</span>
 			</div>
@@ -17,10 +22,10 @@
 			<nav class="flex flex-1 flex-col gap-2">
 				<a
 					href="/"
-					class="flex items-center gap-3 rounded-xl p-3 text-lg font-semibold transition hover:bg-gray-100 {page
+					class="flex items-center gap-3 rounded-xl p-3 text-lg font-semibold transition hover:bg-gray-100 dark:hover:bg-gray-800 {page
 						.url.pathname === '/'
-						? 'bg-blue-50 text-blue-600'
-						: 'text-gray-600'}"
+						? 'bg-blue-50 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400'
+						: 'text-gray-600 dark:text-gray-400'}"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -40,13 +45,13 @@
 				</a>
 			</nav>
 
-			<div class="mt-auto border-t border-gray-200 pt-4">
+			<div class="mt-auto border-t border-gray-200 pt-4 dark:border-gray-800">
 				<div class="mb-4 flex items-center gap-3 px-3">
 					{#if data.user.image}
 						<img
 							src={data.user.image}
 							alt={data.user.name}
-							class="h-10 w-10 rounded-full bg-gray-200"
+							class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700"
 						/>
 					{:else}
 						<div
@@ -56,12 +61,15 @@
 						</div>
 					{/if}
 					<div class="flex flex-col">
-						<span class="font-bold text-gray-800">{data.user.name}</span>
+						<span class="font-bold text-gray-800 dark:text-gray-200">{data.user.name}</span>
 					</div>
+				</div>
+				<div class="mb-4">
+					<ThemeToggle variant="desktop" />
 				</div>
 				<form method="post" action="/?/signOut">
 					<button
-						class="w-full rounded-xl bg-gray-100 p-3 text-left font-semibold text-gray-700 transition hover:bg-gray-200"
+						class="w-full rounded-xl bg-gray-100 p-3 text-left font-semibold text-gray-700 transition hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
 					>
 						Sign Out
 					</button>
@@ -78,13 +86,13 @@
 
 		<!-- Mobile Bottom Bar -->
 		<nav
-			class="pb-safe fixed bottom-0 z-50 flex w-full justify-around border-t border-gray-200 bg-white p-3 md:hidden"
+			class="pb-safe fixed bottom-0 z-50 flex w-full justify-around border-t border-gray-200 bg-white p-3 transition-colors duration-200 md:hidden dark:border-gray-800 dark:bg-gray-900"
 		>
 			<a
 				href="/"
 				class="flex flex-col items-center gap-1 rounded-xl p-2 transition {page.url.pathname === '/'
-					? 'text-blue-600'
-					: 'text-gray-500 hover:text-gray-900'}"
+					? 'text-blue-600 dark:text-blue-400'
+					: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'}"
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -103,9 +111,11 @@
 				<span class="text-xs font-semibold">Home</span>
 			</a>
 
+			<ThemeToggle variant="mobile" />
+
 			<form method="post" action="/?/signOut" class="flex flex-col items-center">
 				<button
-					class="flex flex-col items-center gap-1 rounded-xl p-2 text-gray-500 transition hover:text-gray-900"
+					class="flex flex-col items-center gap-1 rounded-xl p-2 text-gray-500 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
