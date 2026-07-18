@@ -74,7 +74,10 @@
 
 <div class="mx-auto flex h-[calc(100vh-8rem)] max-w-2xl flex-col px-4 py-8">
 	<div class="mb-8 flex items-center gap-4">
-		<a href="/collections/{data.collection.id}" class="text-gray-400 hover:text-gray-600">
+		<a
+			href="/collections/{data.collection.id}"
+			class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				width="24"
@@ -87,19 +90,23 @@
 				stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg
 			>
 		</a>
-		<div class="h-4 flex-1 overflow-hidden rounded-full bg-gray-200">
+		<div class="h-4 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
 			<div
 				class="h-full bg-green-500 transition-all duration-300 ease-out"
 				style="width: {(currentIndex / quizCards.length) * 100}%"
 			></div>
 		</div>
-		<span class="text-sm font-bold text-gray-500">{currentIndex}/{quizCards.length}</span>
+		<span class="text-sm font-bold text-gray-500 dark:text-gray-400"
+			>{currentIndex}/{quizCards.length}</span
+		>
 	</div>
 
 	<div class="flex flex-1 flex-col justify-center">
 		{#if !isFinished}
 			<div class="mb-10 text-center">
-				<h2 class="text-4xl font-extrabold whitespace-pre-wrap text-gray-900 md:text-5xl">
+				<h2
+					class="text-4xl font-extrabold whitespace-pre-wrap text-gray-900 md:text-5xl dark:text-gray-100"
+				>
 					{currentCard.term}
 				</h2>
 			</div>
@@ -111,15 +118,19 @@
 						disabled={selectedOption !== null}
 						class="relative flex min-h-[100px] w-full items-center justify-center rounded-2xl border-2 p-6 text-center text-lg font-bold transition-all
 							{selectedOption === null
-							? 'border-gray-200 bg-white text-gray-700 shadow-[0_4px_0_0_rgba(229,231,235,1)] hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50 hover:shadow-[0_4px_0_0_rgba(147,197,253,1)] active:translate-y-1 active:shadow-none'
+							? 'border-gray-200 bg-white text-gray-700 shadow-[0_4px_0_0_rgba(229,231,235,1)] hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50 hover:shadow-[0_4px_0_0_rgba(147,197,253,1)] active:translate-y-1 active:shadow-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:shadow-[0_4px_0_0_rgba(31,41,55,1)] dark:hover:border-blue-500 dark:hover:bg-blue-900/30 dark:hover:shadow-[0_4px_0_0_rgba(59,130,246,0.5)]'
 							: ''}
-							{selectedOption === option && isCorrect ? 'border-green-500 bg-green-100 text-green-700' : ''}
-							{selectedOption === option && !isCorrect ? 'border-red-500 bg-red-100 text-red-700' : ''}
+							{selectedOption === option && isCorrect
+							? 'border-green-500 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+							: ''}
+							{selectedOption === option && !isCorrect
+							? 'border-red-500 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+							: ''}
 							{selectedOption !== null && selectedOption !== option && option === currentCard.correctAnswer
-							? 'border-green-500 bg-green-50 text-green-700 ring-2 ring-green-500 ring-offset-2'
+							? 'border-green-500 bg-green-50 text-green-700 ring-2 ring-green-500 ring-offset-2 dark:bg-green-900/20 dark:text-green-400 dark:ring-offset-gray-950'
 							: ''}
 							{selectedOption !== null && selectedOption !== option && option !== currentCard.correctAnswer
-							? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-50'
+							? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500'
 							: ''}"
 					>
 						{option}
@@ -171,7 +182,9 @@
 							{@const currentTotal = newScore !== null ? newScore : oldScore}
 							{@const currentProgress = currentTotal % 100}
 							{@const currentLevel = Math.floor(currentTotal / 100)}
-							<div class="animate-fade-in flex items-center gap-3 border-l-2 border-gray-100 pl-6">
+							<div
+								class="animate-fade-in flex items-center gap-3 border-l-2 border-gray-100 pl-6 dark:border-gray-800"
+							>
 								<div class="relative flex h-14 w-14 items-center justify-center">
 									<svg
 										class="absolute inset-0 h-full w-full -rotate-90 transform"
@@ -182,7 +195,7 @@
 											cy="18"
 											r="15"
 											fill="none"
-											class="stroke-gray-100"
+											class="stroke-gray-100 dark:stroke-gray-800"
 											stroke-width="4"
 										></circle>
 										<circle
@@ -202,7 +215,7 @@
 											style="transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);"
 										></circle>
 									</svg>
-									<span class="relative text-xs font-bold text-gray-700">
+									<span class="relative text-xs font-bold text-gray-700 dark:text-gray-300">
 										Lv.{currentLevel}
 									</span>
 								</div>
@@ -222,7 +235,7 @@
 			</div>
 		{:else}
 			<div class="animate-fade-in flex h-full flex-col items-center justify-center text-center">
-				<div class="mb-6 rounded-full bg-green-100 p-6">
+				<div class="mb-6 rounded-full bg-green-100 p-6 dark:bg-green-900/30">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						width="64"
@@ -237,21 +250,29 @@
 						><path d="M12 15l-2 5l9-9l-9-1v-5h-3l2-5l-9 9l9 1v5h3l-2 5z" /></svg
 					>
 				</div>
-				<h2 class="mb-2 text-4xl font-extrabold text-gray-900">Session Complete!</h2>
-				<p class="mb-8 text-xl text-gray-500">You earned {totalCorrect} correct answers.</p>
+				<h2 class="mb-2 text-4xl font-extrabold text-gray-900 dark:text-gray-100">
+					Session Complete!
+				</h2>
+				<p class="mb-8 text-xl text-gray-500 dark:text-gray-400">
+					You earned {totalCorrect} correct answers.
+				</p>
 
 				<div class="mb-8 grid w-full max-w-sm grid-cols-2 gap-4">
-					<div class="rounded-2xl border-2 border-gray-200 bg-white p-4 text-center">
+					<div
+						class="rounded-2xl border-2 border-gray-200 bg-white p-4 text-center dark:border-gray-800 dark:bg-gray-900"
+					>
 						<div class="text-3xl font-extrabold text-blue-500">
 							{Math.round((totalCorrect / quizCards.length) * 100)}%
 						</div>
-						<div class="text-sm font-bold text-gray-400">Accuracy</div>
+						<div class="text-sm font-bold text-gray-400 dark:text-gray-500">Accuracy</div>
 					</div>
-					<div class="rounded-2xl border-2 border-gray-200 bg-white p-4 text-center">
+					<div
+						class="rounded-2xl border-2 border-gray-200 bg-white p-4 text-center dark:border-gray-800 dark:bg-gray-900"
+					>
 						<div class="text-3xl font-extrabold text-orange-500">
 							{(totalResponseTime / quizCards.length / 1000).toFixed(1)}s
 						</div>
-						<div class="text-sm font-bold text-gray-400">Avg Speed</div>
+						<div class="text-sm font-bold text-gray-400 dark:text-gray-500">Avg Speed</div>
 					</div>
 				</div>
 

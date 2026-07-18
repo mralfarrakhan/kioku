@@ -131,11 +131,11 @@ export const actions: Actions = {
 		// Determine SM-2 Quality (1-5)
 		let quality = 1;
 		if (isCorrect) {
-			if (responseTimeMs <= 500) quality = 5;
-			else if (responseTimeMs <= 1000) quality = 4;
+			if (responseTimeMs <= 3000) quality = 5;
+			else if (responseTimeMs <= 5000) quality = 4;
 			else quality = 3;
 		} else {
-			if (responseTimeMs <= 1000) quality = 2;
+			if (responseTimeMs <= 3000) quality = 2;
 			else quality = 1;
 		}
 
@@ -174,10 +174,11 @@ export const actions: Actions = {
 		// Calculate visual XP (fluencyScore acts as Total XP)
 		const oldTotalXp = existing.length > 0 ? existing[0].fluencyScore : 0;
 		let xpChange = 0;
-		if (quality === 5) xpChange = 100;
-		else if (quality === 4) xpChange = 50;
-		else if (quality === 3) xpChange = 25;
-		else xpChange = -100;
+		if (quality === 5) xpChange = 25;
+		else if (quality === 4) xpChange = 15;
+		else if (quality === 3) xpChange = 10;
+		else if (quality === 2) xpChange = -10;
+		else xpChange = -20;
 
 		const newTotalXp = Math.max(0, oldTotalXp + xpChange);
 

@@ -40,7 +40,7 @@
 
 	<div class="flex items-start justify-between">
 		<div>
-			<h1 class="flex items-center gap-3 text-3xl font-extrabold text-gray-900">
+			<h1 class="flex items-center gap-3 text-3xl font-extrabold text-gray-900 dark:text-gray-100">
 				{data.collection.title}
 				{#if data.collection.isShared}
 					<span class="rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-700"
@@ -49,7 +49,7 @@
 				{/if}
 			</h1>
 			{#if data.collection.description}
-				<p class="mt-2 text-lg text-gray-600">{data.collection.description}</p>
+				<p class="mt-2 text-lg text-gray-600 dark:text-gray-400">{data.collection.description}</p>
 			{/if}
 		</div>
 
@@ -57,7 +57,7 @@
 			<div class="flex gap-2">
 				<button
 					onclick={() => (showEditCollection = true)}
-					class="rounded-xl border-2 border-gray-200 bg-white px-4 py-2 font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
+					class="rounded-xl border-2 border-gray-200 bg-white px-4 py-2 font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700"
 				>
 					Edit Info
 				</button>
@@ -73,8 +73,10 @@
 </div>
 
 {#if showEditCollection && isOwner}
-	<div class="mb-8 rounded-2xl border-2 border-gray-200 bg-gray-50 p-6">
-		<h2 class="mb-4 text-xl font-bold text-gray-900">Edit Collection</h2>
+	<div
+		class="mb-8 rounded-2xl border-2 border-gray-200 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-900"
+	>
+		<h2 class="mb-4 text-xl font-bold text-gray-900 dark:text-gray-100">Edit Collection</h2>
 		<form
 			method="post"
 			action="?/editCollection"
@@ -86,20 +88,22 @@
 			}}
 		>
 			<div class="mb-4">
-				<label class="block text-sm font-semibold text-gray-700">Title</label>
+				<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Title</label>
 				<input
 					type="text"
 					name="title"
 					value={data.collection.title}
 					required
-					class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none"
+					class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
 				/>
 			</div>
 			<div class="mb-4">
-				<label class="block text-sm font-semibold text-gray-700">Description</label>
+				<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
+					>Description</label
+				>
 				<textarea
 					name="description"
-					class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none"
+					class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
 					>{data.collection.description || ''}</textarea
 				>
 			</div>
@@ -109,9 +113,11 @@
 					name="isShared"
 					id="isShared"
 					checked={data.collection.isShared}
-					class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+					class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
 				/>
-				<label for="isShared" class="ml-2 block text-sm font-semibold text-gray-700"
+				<label
+					for="isShared"
+					class="ml-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
 					>Make Public (Shared)</label
 				>
 			</div>
@@ -119,7 +125,7 @@
 				<button
 					type="button"
 					onclick={() => (showEditCollection = false)}
-					class="rounded-xl bg-gray-200 px-4 py-2 font-bold text-gray-700 hover:bg-gray-300"
+					class="rounded-xl bg-gray-200 px-4 py-2 font-bold text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 					>Cancel</button
 				>
 				<button
@@ -133,8 +139,10 @@
 {/if}
 
 {#if showCreateCard && isOwner}
-	<div class="mb-8 rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm">
-		<h2 class="mb-4 text-xl font-bold text-blue-900">Add New Flashcard</h2>
+	<div
+		class="mb-8 rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm dark:border-blue-900/50 dark:bg-blue-900/20"
+	>
+		<h2 class="mb-4 text-xl font-bold text-blue-900 dark:text-blue-300">Add New Flashcard</h2>
 		<form
 			method="post"
 			action="?/createFlashcard"
@@ -148,21 +156,25 @@
 		>
 			<div class="grid gap-4 md:grid-cols-2">
 				<div>
-					<label class="block text-sm font-semibold text-blue-900">Term / Question</label>
+					<label class="block text-sm font-semibold text-blue-900 dark:text-blue-300"
+						>Term / Question</label
+					>
 					<textarea
 						name="term"
 						required
 						rows="3"
-						class="mt-1 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none"
+						class="mt-1 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none dark:border-blue-800 dark:bg-gray-800 dark:text-gray-100"
 					></textarea>
 				</div>
 				<div>
-					<label class="block text-sm font-semibold text-blue-900">Definition / Answer</label>
+					<label class="block text-sm font-semibold text-blue-900 dark:text-blue-300"
+						>Definition / Answer</label
+					>
 					<textarea
 						name="definition"
 						required
 						rows="3"
-						class="mt-1 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none"
+						class="mt-1 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none dark:border-blue-800 dark:bg-gray-800 dark:text-gray-100"
 					></textarea>
 				</div>
 			</div>
@@ -170,7 +182,7 @@
 				<button
 					type="button"
 					onclick={() => (showCreateCard = false)}
-					class="rounded-xl bg-gray-200 px-4 py-2 font-bold text-gray-700 transition hover:bg-gray-300"
+					class="rounded-xl bg-gray-200 px-4 py-2 font-bold text-gray-700 transition hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 					>Done</button
 				>
 				<button
@@ -184,11 +196,13 @@
 {/if}
 
 <div
-	class="mb-8 flex flex-col justify-between gap-4 rounded-2xl border-2 border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center"
+	class="mb-8 flex flex-col justify-between gap-4 rounded-2xl border-2 border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center dark:border-gray-800 dark:bg-gray-800"
 >
 	<div>
-		<h2 class="text-xl font-extrabold text-gray-900">Quiz Mode</h2>
-		<p class="mt-1 font-medium text-gray-500">Review flashcards to build fluency.</p>
+		<h2 class="text-xl font-extrabold text-gray-900 dark:text-gray-100">Quiz Mode</h2>
+		<p class="mt-1 font-medium text-gray-500 dark:text-gray-400">
+			Review flashcards to build fluency.
+		</p>
 	</div>
 
 	<div class="flex items-center gap-3">
@@ -202,7 +216,7 @@
 				</a>
 				<button
 					onclick={() => (showQuizOptions = !showQuizOptions)}
-					class="inline-flex h-[48px] w-[48px] items-center justify-center rounded-xl border-2 border-gray-200 bg-white font-extrabold text-gray-400 shadow-[0_4px_0_0_rgba(229,231,235,1)] transition hover:-translate-y-1 hover:border-gray-300 hover:text-gray-500 hover:shadow-[0_6px_0_0_rgba(229,231,235,1)] active:translate-y-1 active:shadow-none"
+					class="inline-flex h-[48px] w-[48px] items-center justify-center rounded-xl border-2 border-gray-200 bg-white font-extrabold text-gray-400 shadow-[0_4px_0_0_rgba(229,231,235,1)] transition hover:-translate-y-1 hover:border-gray-300 hover:text-gray-500 hover:shadow-[0_6px_0_0_rgba(229,231,235,1)] active:translate-y-1 active:shadow-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-500 dark:shadow-[0_4px_0_0_rgba(31,41,55,1)] dark:hover:border-gray-600 dark:hover:text-gray-400 dark:hover:shadow-[0_6px_0_0_rgba(31,41,55,1)]"
 					aria-label="Session Length Options"
 				>
 					<svg
@@ -232,29 +246,31 @@
 						aria-label="Close options"
 					></button>
 					<div
-						class="absolute top-full right-0 z-20 mt-3 w-48 rounded-xl border border-gray-100 bg-white p-2 shadow-xl"
+						class="absolute top-full right-0 z-20 mt-3 w-48 rounded-xl border border-gray-100 bg-white p-2 shadow-xl dark:border-gray-700 dark:bg-gray-800"
 					>
-						<div class="px-3 py-2 text-xs font-bold tracking-wider text-gray-400 uppercase">
+						<div
+							class="px-3 py-2 text-xs font-bold tracking-wider text-gray-400 uppercase dark:text-gray-500"
+						>
 							Session Length
 						</div>
 						<a
 							href="/collections/{data.collection.id}/quiz?count=10"
-							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
 							>10 cards</a
 						>
 						<a
 							href="/collections/{data.collection.id}/quiz?count=20"
-							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
 							>20 cards (Default)</a
 						>
 						<a
 							href="/collections/{data.collection.id}/quiz?count=50"
-							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
 							>50 cards</a
 						>
 						<a
 							href="/collections/{data.collection.id}/quiz?count=all"
-							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
 							>All cards</a
 						>
 					</div>
@@ -263,11 +279,11 @@
 		{:else}
 			<div class="flex items-center gap-3">
 				<div
-					class="cursor-not-allowed rounded-xl bg-gray-100 px-6 py-3 font-extrabold text-gray-400"
+					class="cursor-not-allowed rounded-xl bg-gray-100 px-6 py-3 font-extrabold text-gray-400 dark:bg-gray-800 dark:text-gray-500"
 				>
 					Review Now
 				</div>
-				<p class="text-sm font-medium text-gray-500">
+				<p class="text-sm font-medium text-gray-500 dark:text-gray-400">
 					Add {4 - data.flashcards.length} more card{data.flashcards.length === 3 ? '' : 's'} to unlock.
 				</p>
 			</div>
@@ -276,21 +292,27 @@
 </div>
 
 <div class="mt-8">
-	<div class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2">
-		<h2 class="text-xl font-bold text-gray-800">
-			Flashcards <span class="text-sm text-gray-400">({data.flashcards.length})</span>
+	<div
+		class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-800"
+	>
+		<h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
+			Flashcards <span class="text-sm text-gray-400 dark:text-gray-500"
+				>({data.flashcards.length})</span
+			>
 		</h2>
 	</div>
 
 	{#if data.flashcards.length === 0}
-		<div class="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 py-12 text-center">
-			<p class="text-lg font-bold text-gray-500">This collection is empty.</p>
+		<div
+			class="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 py-12 text-center dark:border-gray-700 dark:bg-gray-900"
+		>
+			<p class="text-lg font-bold text-gray-500 dark:text-gray-400">This collection is empty.</p>
 		</div>
 	{:else}
 		<div class="flex flex-col gap-4">
 			{#each data.flashcards as card (card.id)}
 				<div
-					class="rounded-2xl border-2 border-gray-100 bg-white p-5 shadow-sm transition hover:border-gray-200"
+					class="rounded-2xl border-2 border-gray-100 bg-white p-5 shadow-sm transition hover:border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700"
 				>
 					{#if editCardId === card.id && isOwner}
 						<form
@@ -309,20 +331,20 @@
 									name="term"
 									required
 									bind:value={editCardTerm}
-									class="w-full rounded-xl border border-gray-300 bg-white p-3 font-bold text-gray-900 focus:border-blue-500 focus:outline-none"
+									class="w-full rounded-xl border border-gray-300 bg-white p-3 font-bold text-gray-900 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
 								></textarea>
 								<textarea
 									name="definition"
 									required
 									bind:value={editCardDef}
-									class="w-full rounded-xl border border-gray-300 bg-white p-3 text-gray-700 focus:border-blue-500 focus:outline-none"
+									class="w-full rounded-xl border border-gray-300 bg-white p-3 text-gray-700 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
 								></textarea>
 							</div>
 							<div class="mt-3 flex justify-end gap-2">
 								<button
 									type="button"
 									onclick={() => (editCardId = null)}
-									class="rounded-lg bg-gray-100 px-3 py-1 font-bold text-gray-600 hover:bg-gray-200"
+									class="rounded-lg bg-gray-100 px-3 py-1 font-bold text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
 									>Cancel</button
 								>
 								<button
@@ -334,15 +356,23 @@
 						</form>
 					{:else}
 						<div class="flex flex-col gap-4 text-center">
-							<div class="border-b border-gray-100 pb-4">
-								<p class="text-3xl font-extrabold whitespace-pre-wrap text-gray-900">{card.term}</p>
+							<div class="border-b border-gray-100 pb-4 dark:border-gray-800">
+								<p
+									class="text-3xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100"
+								>
+									{card.term}
+								</p>
 							</div>
 							<div>
-								<p class="text-xl whitespace-pre-wrap text-gray-700">{card.definition}</p>
+								<p class="text-xl whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+									{card.definition}
+								</p>
 							</div>
 						</div>
 
-						<div class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+						<div
+							class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-800"
+						>
 							<div class="flex items-center gap-3" title="Card Level">
 								<div class="relative flex h-10 w-10 items-center justify-center">
 									<svg
@@ -354,7 +384,7 @@
 											cy="18"
 											r="15"
 											fill="none"
-											class="stroke-gray-100"
+											class="stroke-gray-100 dark:stroke-gray-800"
 											stroke-width="4"
 										></circle>
 										{#if card.fluencyScore !== null && card.fluencyScore !== undefined}
@@ -381,8 +411,8 @@
 									<span
 										class="relative text-[10px] font-bold {card.fluencyScore !== null &&
 										card.fluencyScore !== undefined
-											? 'text-gray-700'
-											: 'text-gray-400'}"
+											? 'text-gray-700 dark:text-gray-300'
+											: 'text-gray-400 dark:text-gray-500'}"
 									>
 										Lv.{Math.floor((card.fluencyScore || 0) / 100)}
 									</span>
@@ -390,35 +420,39 @@
 								<span
 									class="text-sm font-bold {card.fluencyScore !== null &&
 									card.fluencyScore !== undefined
-										? 'text-gray-600'
-										: 'text-gray-400'}">Level</span
+										? 'text-gray-600 dark:text-gray-400'
+										: 'text-gray-400 dark:text-gray-500'}">Level</span
 								>
 							</div>
 
-							{#if isOwner}
-								<div class="flex items-center gap-2">
+							<div class="flex items-center gap-2">
+								<button
+									onclick={() => isOwner && startEditCard(card.id, card.term, card.definition)}
+									disabled={!isOwner}
+									class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner ? 'text-gray-500 hover:bg-gray-100 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-blue-400' : 'text-gray-300 cursor-not-allowed dark:text-gray-700'}"
+									>Edit</button
+								>
+								<form
+									method="post"
+									action="?/deleteFlashcard"
+									use:enhance
+									onsubmit={(e) => {
+										if (!isOwner) {
+											e.preventDefault();
+											return;
+										}
+										if (!confirm('Delete this card?')) e.preventDefault();
+									}}
+								>
+									<input type="hidden" name="id" value={card.id} />
 									<button
-										onclick={() => startEditCard(card.id, card.term, card.definition)}
-										class="rounded-lg px-4 py-2 text-sm font-bold text-gray-500 transition hover:bg-gray-100 hover:text-blue-600"
-										>Edit</button
+										type="submit"
+										disabled={!isOwner}
+										class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner ? 'text-gray-500 hover:bg-red-50 hover:text-red-500 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400' : 'text-gray-300 cursor-not-allowed dark:text-gray-700'}"
+										>Delete</button
 									>
-									<form
-										method="post"
-										action="?/deleteFlashcard"
-										use:enhance
-										onsubmit={(e) => {
-											if (!confirm('Delete this card?')) e.preventDefault();
-										}}
-									>
-										<input type="hidden" name="id" value={card.id} />
-										<button
-											type="submit"
-											class="rounded-lg px-4 py-2 text-sm font-bold text-gray-500 transition hover:bg-red-50 hover:text-red-500"
-											>Delete</button
-										>
-									</form>
-								</div>
-							{/if}
+								</form>
+							</div>
 						</div>
 					{/if}
 				</div>
