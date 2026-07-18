@@ -11,7 +11,7 @@
 		<!-- Desktop Sidebar -->
 		<aside class="hidden w-64 flex-col border-r border-gray-200 bg-white p-6 md:flex">
 			<div class="mb-8 flex items-center gap-2 text-2xl font-bold text-blue-600">
-				<span>Munarhringr</span>
+				<span>Kioku</span>
 			</div>
 
 			<nav class="flex flex-1 flex-col gap-2">

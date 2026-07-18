@@ -10,7 +10,7 @@
 <div class="flex min-h-screen items-center justify-center bg-gray-50 p-4">
 	<div class="w-full max-w-md rounded-3xl border-2 border-gray-200 bg-white p-8 shadow-sm">
 		<div class="mb-8 text-center">
-			<h1 class="text-4xl font-extrabold tracking-tight text-blue-600">Munarhringr</h1>
+			<h1 class="text-4xl font-extrabold tracking-tight text-blue-600">Kioku</h1>
 			<p class="mt-2 text-lg font-medium text-gray-500">
 				{#if isRegistering}
 					Create an account to start learning

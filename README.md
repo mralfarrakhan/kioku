@@ -15,7 +15,7 @@ To recreate this project with the same configuration:
 
 ```sh
 # recreate this project
-bun x sv@0.16.3 create --template minimal --types ts --add prettier eslint tailwindcss="plugins:typography,forms" sveltekit-adapter="adapter:cloudflare+cfTarget:workers" better-auth="demo:password" mcp="ide:gemini,claude-code+setup:local" drizzle="database:d1" --install bun munarhringr
+bun x sv@0.16.3 create --template minimal --types ts --add prettier eslint tailwindcss="plugins:typography,forms" sveltekit-adapter="adapter:cloudflare+cfTarget:workers" better-auth="demo:password" mcp="ide:gemini,claude-code+setup:local" drizzle="database:d1" --install bun kioku
 ```
 
 ## Developing
