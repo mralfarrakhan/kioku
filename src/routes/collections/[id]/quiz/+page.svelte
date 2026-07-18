@@ -168,6 +168,9 @@
 						</div>
 
 						{#if oldScore !== null}
+							{@const currentTotal = newScore !== null ? newScore : oldScore}
+							{@const currentProgress = currentTotal % 100}
+							{@const currentLevel = Math.floor(currentTotal / 100)}
 							<div class="animate-fade-in flex items-center gap-3 border-l-2 border-gray-100 pl-6">
 								<div class="relative flex h-14 w-14 items-center justify-center">
 									<svg
@@ -182,9 +185,6 @@
 											class="stroke-gray-100"
 											stroke-width="4"
 										></circle>
-										{@const currentTotal = newScore !== null ? newScore : oldScore}
-										{@const currentProgress = currentTotal % 100}
-										{@const currentLevel = Math.floor(currentTotal / 100)}
 										<circle
 											cx="18"
 											cy="18"
@@ -203,7 +203,7 @@
 										></circle>
 									</svg>
 									<span class="relative text-xs font-bold text-gray-700">
-										Lv.{Math.floor((newScore !== null ? newScore : oldScore) / 100)}
+										Lv.{currentLevel}
 									</span>
 								</div>
 								{#if fluencyChange !== null}
