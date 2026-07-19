@@ -52,6 +52,7 @@
 							src={data.user.image}
 							alt={data.user.name}
 							class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700"
+							referrerpolicy="no-referrer"
 						/>
 					{:else}
 						<div

@@ -55,40 +55,66 @@ export const load: PageServerLoad = async (event) => {
 
 	const progressMap = new Map(progressRecords.map((p) => [p.flashcardId, p]));
 
-	// Score each card for sorting:
-	const scoredCards = allCards.map((card) => {
+	// 1. Calculate weights for each card
+	const weightedCards = allCards.map((card) => {
 		const prog = progressMap.get(card.id);
-		let priorityScore = 0;
+		let weight = 0;
 
 		if (!prog) {
-			priorityScore = 10000; // Brand new cards highest priority
+			weight = 10000; // Brand new cards have very high weight
 		} else {
 			const isDue = !prog.nextReviewAt || new Date(prog.nextReviewAt) <= new Date();
 			if (isDue) {
-				priorityScore = 5000 + (100 - prog.repetitions * 20); // Due cards, lower reps first
+				weight = 5000 + (100 - Math.min(prog.repetitions * 20, 100));
 			} else {
-				// Not due? Add some randomness weighted by how low their level is
-				priorityScore = Math.random() * (100 - prog.repetitions * 20);
+				weight = Math.max(1, 100 - prog.repetitions * 20);
 			}
 		}
-		return { card, priorityScore };
+		return { card, weight, baseWeight: weight };
 	});
-
-	// Sort descending by priorityScore
-	scoredCards.sort((a, b) => b.priorityScore - a.priorityScore);
 
 	// Parse count
 	const countParam = event.url.searchParams.get('count');
 	let takeCount = 20;
-	if (countParam === 'all') {
-		takeCount = allCards.length;
-	} else if (countParam && !isNaN(parseInt(countParam))) {
+	if (countParam && !isNaN(parseInt(countParam))) {
 		takeCount = parseInt(countParam);
 	}
-	// Cap at max available
-	takeCount = Math.min(takeCount, allCards.length);
 
-	const selectedCards = scoredCards.slice(0, takeCount).map((s) => s.card);
+	let selectedCards: typeof allCards = [];
+
+	if (countParam === 'all') {
+		// "All cards": Shuffle all available items exactly once
+		selectedCards = shuffle([...allCards]);
+	} else {
+		// N items: Weighted random sample with replacement
+		let lastDrawnId: string | null = null;
+
+		for (let i = 0; i < takeCount; i++) {
+			let totalWeight = 0;
+			// Temporarily zero the weight of the last drawn card if there's more than 1 card to avoid consecutive repeats
+			weightedCards.forEach((wc) => {
+				wc.weight = wc.card.id === lastDrawnId && allCards.length > 1 ? 0 : wc.baseWeight;
+				totalWeight += wc.weight;
+			});
+
+			let randomValue = Math.random() * totalWeight;
+			let drawnCard = null;
+
+			for (const wc of weightedCards) {
+				randomValue -= wc.weight;
+				if (randomValue <= 0) {
+					drawnCard = wc.card;
+					break;
+				}
+			}
+
+			// Fallback in case of rounding issues
+			if (!drawnCard) drawnCard = weightedCards[weightedCards.length - 1].card;
+
+			selectedCards.push(drawnCard);
+			lastDrawnId = drawnCard.id;
+		}
+	}
 
 	// Generate distractors for each card
 	const quizSession = selectedCards.map((c) => {
