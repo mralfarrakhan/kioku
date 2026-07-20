@@ -2,7 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { collection, flashcard, userFlashcardProgress } from '$lib/server/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, count } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -25,6 +25,19 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(302, '/');
 	}
 
+	// Pagination parameters
+	const url = new URL(event.request.url);
+	const page = parseInt(url.searchParams.get('page') || '1') || 1;
+	const pageSize = 20;
+
+	// Total count for pagination
+	const countResult = await db
+		.select({ value: count() })
+		.from(flashcard)
+		.where(eq(flashcard.collectionId, id));
+	const totalItems = countResult[0].value;
+	const totalPages = Math.ceil(totalItems / pageSize);
+
 	const flashcards = await db
 		.select({
 			id: flashcard.id,
@@ -44,11 +57,18 @@ export const load: PageServerLoad = async (event) => {
 			)
 		)
 		.where(eq(flashcard.collectionId, id))
-		.orderBy(desc(flashcard.createdAt));
+		.orderBy(desc(flashcard.createdAt))
+		.limit(pageSize)
+		.offset((page - 1) * pageSize);
 
 	return {
 		collection: coll,
-		flashcards
+		flashcards,
+		pagination: {
+			page,
+			totalPages,
+			totalItems
+		}
 	};
 };
 

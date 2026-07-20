@@ -62,7 +62,7 @@
 
 			if (result.type === 'success' && result.data) {
 				oldScore = result.data.oldScore as number;
-				
+
 				ringTransition = 'none';
 				displayProgress = oldScore % 100;
 				displayLevel = Math.floor(oldScore / 100);
@@ -81,12 +81,12 @@
 					if (newLevel !== displayLevel) {
 						delayBeforeNext += 1000; // Give extra time for multi-phase animation
 						displayProgress = newLevel > displayLevel ? 100 : 0;
-						
+
 						setTimeout(() => {
 							ringTransition = 'none';
 							displayProgress = newLevel > displayLevel ? 0 : 100;
 							displayLevel = newLevel;
-							
+
 							setTimeout(() => {
 								ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
 								displayProgress = newProgress;
@@ -102,25 +102,22 @@
 		}
 
 		// Move to next question after delay
-		setTimeout(
-			() => {
-				currentIndex++;
-				if (currentIndex >= quizCards.length && incorrectQueue.length > 0) {
-					isRetryPhase = true;
-					quizCards = [...incorrectQueue];
-					incorrectQueue = [];
-					currentIndex = 0;
-				}
+		setTimeout(() => {
+			currentIndex++;
+			if (currentIndex >= quizCards.length && incorrectQueue.length > 0) {
+				isRetryPhase = true;
+				quizCards = [...incorrectQueue];
+				incorrectQueue = [];
+				currentIndex = 0;
+			}
 
-				selectedOption = null;
-				isCorrect = null;
-				oldScore = null;
-				newScore = null;
-				fluencyChange = null;
-				questionStartTime = Date.now();
-			},
-			delayBeforeNext
-		);
+			selectedOption = null;
+			isCorrect = null;
+			oldScore = null;
+			newScore = null;
+			fluencyChange = null;
+			questionStartTime = Date.now();
+		}, delayBeforeNext);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -157,7 +154,9 @@
 		</a>
 		<div class="h-4 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
 			<div
-				class="h-full transition-all duration-300 ease-out {isRetryPhase ? 'bg-orange-500' : 'bg-green-500'}"
+				class="h-full transition-all duration-300 ease-out {isRetryPhase
+					? 'bg-orange-500'
+					: 'bg-green-500'}"
 				style="width: {(currentIndex / quizCards.length) * 100}%"
 			></div>
 		</div>
@@ -204,7 +203,9 @@
 							? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500'
 							: ''}"
 					>
-						<div class="absolute left-4 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border-2 border-current font-bold opacity-50">
+						<div
+							class="absolute top-1/2 left-4 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border-2 border-current font-bold opacity-50"
+						>
 							{index + 1}
 						</div>
 						<span class="pl-12">{option}</span>

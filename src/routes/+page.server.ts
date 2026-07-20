@@ -2,7 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { collection, user } from '$lib/server/db/schema';
-import { eq, or, and, desc } from 'drizzle-orm';
+import { eq, or, and, desc, count } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -10,6 +10,19 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	const db = getDb(event.platform?.env?.DB as D1Database);
+
+	// Pagination parameters
+	const url = new URL(event.request.url);
+	const page = parseInt(url.searchParams.get('page') || '1') || 1;
+	const pageSize = 12;
+
+	// Total count for pagination
+	const countResult = await db
+		.select({ value: count() })
+		.from(collection)
+		.where(or(eq(collection.userId, event.locals.user.id), eq(collection.isShared, true)));
+	const totalItems = countResult[0].value;
+	const totalPages = Math.ceil(totalItems / pageSize);
 
 	// Fetch collections: either owned by the user, or shared
 	const collections = await db
@@ -26,11 +39,18 @@ export const load: PageServerLoad = async (event) => {
 		.from(collection)
 		.leftJoin(user, eq(collection.userId, user.id))
 		.where(or(eq(collection.userId, event.locals.user.id), eq(collection.isShared, true)))
-		.orderBy(desc(collection.updatedAt), desc(collection.createdAt));
+		.orderBy(desc(collection.updatedAt), desc(collection.createdAt))
+		.limit(pageSize)
+		.offset((page - 1) * pageSize);
 
 	return {
 		user: event.locals.user,
-		collections
+		collections,
+		pagination: {
+			page,
+			totalPages,
+			totalItems
+		}
 	};
 };
 

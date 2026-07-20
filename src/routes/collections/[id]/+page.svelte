@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { PageServerData } from './$types';
 	import { page } from '$app/state';
+	import Pagination from '$lib/components/Pagination.svelte';
 
 	let { data }: { data: PageServerData } = $props();
 
@@ -501,5 +502,6 @@
 				</div>
 			{/each}
 		</div>
+		<Pagination currentPage={data.pagination.page} totalPages={data.pagination.totalPages} />
 	{/if}
 </div>
