@@ -4,9 +4,14 @@
 	import { page } from '$app/state';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import { resolve } from '$app/paths';
 
 	let { data, children }: { data: LayoutServerData; children: import('svelte').Snippet } = $props();
 </script>
+
+<svelte:head>
+	<link rel="icon" href="favicon.png" />
+</svelte:head>
 
 {#if data.user}
 	<div
@@ -22,7 +27,7 @@
 
 			<nav class="flex flex-1 flex-col gap-2">
 				<a
-					href="/"
+					href={resolve('/')}
 					class="flex items-center gap-3 rounded-xl p-3 text-lg font-semibold transition hover:bg-gray-100 dark:hover:bg-gray-800 {page
 						.url.pathname === '/'
 						? 'bg-blue-50 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400'
@@ -91,7 +96,7 @@
 			class="pb-safe fixed bottom-0 z-50 flex w-full justify-around border-t border-gray-200 bg-white p-3 transition-colors duration-200 md:hidden dark:border-gray-800 dark:bg-gray-900"
 		>
 			<a
-				href="/"
+				href={resolve('/')}
 				class="flex flex-col items-center gap-1 rounded-xl p-2 transition {page.url.pathname === '/'
 					? 'text-blue-600 dark:text-blue-400'
 					: 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'}"
