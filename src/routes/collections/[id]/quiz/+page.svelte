@@ -260,7 +260,7 @@
 									stroke-linejoin="round"
 									><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg
 								>
-								Correct answer: 
+								Correct answer:
 								{#if currentCard.isMarkdown}
 									{@html parseMarkdown(currentCard.correctAnswer)}
 								{:else}

@@ -65,7 +65,9 @@
 
 		<div class="flex gap-2">
 			<button
-				onclick={() => { if (isOwner) showEditCollection = true; }}
+				onclick={() => {
+					if (isOwner) showEditCollection = true;
+				}}
 				disabled={!isOwner}
 				title={!isOwner ? 'Only the owner can edit this collection' : ''}
 				class="rounded-xl border-2 px-4 py-2 font-bold transition {isOwner
@@ -75,7 +77,9 @@
 				Edit Info
 			</button>
 			<button
-				onclick={() => { if (isOwner) createCardDialog?.showModal(); }}
+				onclick={() => {
+					if (isOwner) createCardDialog?.showModal();
+				}}
 				disabled={!isOwner}
 				title={!isOwner ? 'Only the owner can add cards' : ''}
 				class="rounded-xl px-4 py-2 font-bold text-white shadow-sm transition {isOwner
@@ -251,31 +255,35 @@
 					>Advanced Formatting (Markdown)</label
 				>
 			</div>
-			
+
 			{#if newCardMarkdown}
-			<div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-				<p class="mb-2 text-xs font-bold uppercase text-gray-500">Live Preview</p>
-				<div class="text-center">
-					<div class="border-b border-gray-200 pb-3 dark:border-gray-700">
-						<div class="text-xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100">
-							{#if newCardTerm}
-								{@html parseMarkdown(newCardTerm)}
-							{:else}
-								<span class="text-gray-400">Term...</span>
-							{/if}
+				<div
+					class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
+				>
+					<p class="mb-2 text-xs font-bold text-gray-500 uppercase">Live Preview</p>
+					<div class="text-center">
+						<div class="border-b border-gray-200 pb-3 dark:border-gray-700">
+							<div
+								class="text-xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100"
+							>
+								{#if newCardTerm}
+									{@html parseMarkdown(newCardTerm)}
+								{:else}
+									<span class="text-gray-400">Term...</span>
+								{/if}
+							</div>
 						</div>
-					</div>
-					<div class="pt-3">
-						<div class="text-lg whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-							{#if newCardDef}
-								{@html parseMarkdown(newCardDef)}
-							{:else}
-								<span class="text-gray-400">Definition...</span>
-							{/if}
+						<div class="pt-3">
+							<div class="text-lg whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+								{#if newCardDef}
+									{@html parseMarkdown(newCardDef)}
+								{:else}
+									<span class="text-gray-400">Definition...</span>
+								{/if}
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
 			{/if}
 
 			<div class="mt-6 flex justify-end gap-3">
@@ -457,21 +465,25 @@
 							</div>
 
 							{#if editCardMarkdown}
-							<div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
-								<p class="mb-2 text-xs font-bold uppercase text-gray-500">Live Preview</p>
-								<div class="text-center">
-									<div class="border-b border-gray-200 pb-3 dark:border-gray-700">
-										<div class="text-xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100">
-											{@html parseMarkdown(editCardTerm)}
+								<div
+									class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
+								>
+									<p class="mb-2 text-xs font-bold text-gray-500 uppercase">Live Preview</p>
+									<div class="text-center">
+										<div class="border-b border-gray-200 pb-3 dark:border-gray-700">
+											<div
+												class="text-xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100"
+											>
+												{@html parseMarkdown(editCardTerm)}
+											</div>
 										</div>
-									</div>
-									<div class="pt-3">
-										<div class="text-lg whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-											{@html parseMarkdown(editCardDef)}
+										<div class="pt-3">
+											<div class="text-lg whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+												{@html parseMarkdown(editCardDef)}
+											</div>
 										</div>
 									</div>
 								</div>
-							</div>
 							{/if}
 
 							<div class="mt-3 flex justify-end gap-2">
@@ -569,7 +581,8 @@
 
 							<div class="flex items-center gap-2">
 								<button
-									onclick={() => isOwner && startEditCard(card.id, card.term, card.definition, card.isMarkdown)}
+									onclick={() =>
+										isOwner && startEditCard(card.id, card.term, card.definition, card.isMarkdown)}
 									disabled={!isOwner}
 									class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner
 										? 'text-gray-500 hover:bg-gray-100 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-blue-400'

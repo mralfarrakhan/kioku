@@ -5,7 +5,9 @@ import DOMPurify from 'isomorphic-dompurify';
 const colorExtension: TokenizerAndRendererExtension = {
 	name: 'colorText',
 	level: 'inline',
-	start(src: string) { return src.match(/\[/)?.index; },
+	start(src: string) {
+		return src.match(/\[/)?.index;
+	},
 	tokenizer(src: string, tokens: any) {
 		const rule = /^\[([^\]]+)\]\{([^}]+)\}/;
 		const match = rule.exec(src);
@@ -30,7 +32,7 @@ marked.use({ extensions: [colorExtension] });
 
 export function parseMarkdown(text: string | null | undefined): string {
 	if (!text) return '';
-	
+
 	// Escape HTML
 	const escapedText = text
 		.replace(/&/g, '&amp;')
@@ -40,7 +42,7 @@ export function parseMarkdown(text: string | null | undefined): string {
 		.replace(/'/g, '&#039;');
 
 	const rawHtml = marked.parseInline(escapedText, { async: false, breaks: true }) as string;
-	
+
 	return DOMPurify.sanitize(rawHtml, {
 		ALLOWED_TAGS: ['strong', 'em', 'del', 'span', 'br'],
 		ALLOWED_ATTR: ['style']
