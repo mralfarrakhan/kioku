@@ -2,6 +2,7 @@
 	import { deserialize } from '$app/forms';
 	import type { PageServerData } from './$types';
 	import { onMount } from 'svelte';
+	import { parseMarkdown } from '$lib/markdown';
 
 	let { data }: { data: PageServerData } = $props();
 
@@ -177,7 +178,11 @@
 				<h2
 					class="text-4xl font-extrabold whitespace-pre-wrap text-gray-900 md:text-5xl dark:text-gray-100"
 				>
-					{currentCard.term}
+					{#if currentCard.isMarkdown}
+						{@html parseMarkdown(currentCard.term)}
+					{:else}
+						{currentCard.term}
+					{/if}
 				</h2>
 			</div>
 
@@ -208,7 +213,13 @@
 						>
 							{index + 1}
 						</div>
-						<span class="pl-12">{option}</span>
+						<span class="pl-12">
+							{#if currentCard.isMarkdown}
+								{@html parseMarkdown(option)}
+							{:else}
+								{option}
+							{/if}
+						</span>
 					</button>
 				{/each}
 			</div>
@@ -249,7 +260,12 @@
 									stroke-linejoin="round"
 									><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg
 								>
-								Correct answer: {currentCard.correctAnswer}
+								Correct answer: 
+								{#if currentCard.isMarkdown}
+									{@html parseMarkdown(currentCard.correctAnswer)}
+								{:else}
+									{currentCard.correctAnswer}
+								{/if}
 							{/if}
 						</div>
 

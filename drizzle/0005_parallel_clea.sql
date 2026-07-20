@@ -1,0 +1,1 @@
+ALTER TABLE `flashcard` ADD `is_markdown` integer DEFAULT false NOT NULL;

@@ -43,6 +43,7 @@ export const load: PageServerLoad = async (event) => {
 			id: flashcard.id,
 			term: flashcard.term,
 			definition: flashcard.definition,
+			isMarkdown: flashcard.isMarkdown,
 			collectionId: flashcard.collectionId,
 			createdAt: flashcard.createdAt,
 			updatedAt: flashcard.updatedAt,
@@ -106,6 +107,7 @@ export const actions: Actions = {
 		const formData = await event.request.formData();
 		const term = formData.get('term')?.toString();
 		const definition = formData.get('definition')?.toString();
+		const isMarkdown = formData.get('isMarkdown')?.toString() === 'on';
 
 		if (!term || !definition) {
 			return fail(400, { message: 'Term and definition are required' });
@@ -140,7 +142,8 @@ export const actions: Actions = {
 			await db.insert(flashcard).values({
 				collectionId: id,
 				term: term.trim(),
-				definition: definition.trim()
+				definition: definition.trim(),
+				isMarkdown
 			});
 			return { success: true };
 		} catch (e) {
@@ -157,6 +160,7 @@ export const actions: Actions = {
 		const flashcardId = formData.get('id')?.toString();
 		const term = formData.get('term')?.toString();
 		const definition = formData.get('definition')?.toString();
+		const isMarkdown = formData.get('isMarkdown')?.toString() === 'on';
 
 		if (!flashcardId || !term || !definition) return fail(400, { message: 'Missing fields' });
 
@@ -172,7 +176,7 @@ export const actions: Actions = {
 		try {
 			await db
 				.update(flashcard)
-				.set({ term, definition })
+				.set({ term, definition, isMarkdown })
 				.where(and(eq(flashcard.id, flashcardId), eq(flashcard.collectionId, collectionId)));
 			return { success: true };
 		} catch (e) {

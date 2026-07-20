@@ -37,6 +37,7 @@ export const flashcard = sqliteTable('flashcard', {
 		.references(() => collection.id, { onDelete: 'cascade' }),
 	term: text('term').notNull(),
 	definition: text('definition').notNull(),
+	isMarkdown: integer('is_markdown', { mode: 'boolean' }).notNull().default(false),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull(),

@@ -3,6 +3,7 @@
 	import type { PageServerData } from './$types';
 	import { page } from '$app/state';
 	import Pagination from '$lib/components/Pagination.svelte';
+	import { parseMarkdown } from '$lib/markdown';
 
 	let { data }: { data: PageServerData } = $props();
 
@@ -14,15 +15,20 @@
 	let createCardDialog: HTMLDialogElement | undefined = $state();
 	let createCardError = $state<string | null>(null);
 	let termInputEl: HTMLTextAreaElement | undefined = $state();
+	let newCardTerm = $state('');
+	let newCardDef = $state('');
+	let newCardMarkdown = $state(false);
 
 	let editCardId = $state<string | null>(null);
 	let editCardTerm = $state('');
 	let editCardDef = $state('');
+	let editCardMarkdown = $state(false);
 
-	function startEditCard(id: string, term: string, def: string) {
+	function startEditCard(id: string, term: string, def: string, isMarkdown: boolean) {
 		editCardId = id;
 		editCardTerm = term;
 		editCardDef = def;
+		editCardMarkdown = isMarkdown;
 	}
 </script>
 
@@ -57,22 +63,28 @@
 			{/if}
 		</div>
 
-		{#if isOwner}
-			<div class="flex gap-2">
-				<button
-					onclick={() => (showEditCollection = true)}
-					class="rounded-xl border-2 border-gray-200 bg-white px-4 py-2 font-bold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700"
-				>
-					Edit Info
-				</button>
-				<button
-					onclick={() => createCardDialog?.showModal()}
-					class="rounded-xl bg-blue-500 px-4 py-2 font-bold text-white shadow-sm transition hover:bg-blue-600 hover:shadow"
-				>
-					+ Add Card
-				</button>
-			</div>
-		{/if}
+		<div class="flex gap-2">
+			<button
+				onclick={() => { if (isOwner) showEditCollection = true; }}
+				disabled={!isOwner}
+				title={!isOwner ? 'Only the owner can edit this collection' : ''}
+				class="rounded-xl border-2 px-4 py-2 font-bold transition {isOwner
+					? 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-700'
+					: 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-60 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-600'}"
+			>
+				Edit Info
+			</button>
+			<button
+				onclick={() => { if (isOwner) createCardDialog?.showModal(); }}
+				disabled={!isOwner}
+				title={!isOwner ? 'Only the owner can add cards' : ''}
+				class="rounded-xl px-4 py-2 font-bold text-white shadow-sm transition {isOwner
+					? 'bg-blue-500 hover:bg-blue-600 hover:shadow'
+					: 'cursor-not-allowed bg-blue-300 opacity-60 dark:bg-blue-800'}"
+			>
+				+ Add Card
+			</button>
+		</div>
 	</div>
 </div>
 
@@ -188,6 +200,9 @@
 					} else if (result.type === 'success') {
 						await update();
 						formElement.reset();
+						newCardTerm = '';
+						newCardDef = '';
+						newCardMarkdown = false;
 						termInputEl?.focus();
 					}
 				};
@@ -203,6 +218,7 @@
 						required
 						rows="3"
 						maxlength="255"
+						bind:value={newCardTerm}
 						bind:this={termInputEl}
 						class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
 					></textarea>
@@ -216,10 +232,52 @@
 						required
 						rows="3"
 						maxlength="1000"
+						bind:value={newCardDef}
 						class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
 					></textarea>
 				</div>
 			</div>
+			<div class="mt-4 flex items-center">
+				<input
+					type="checkbox"
+					name="isMarkdown"
+					id="isMarkdownAdd"
+					bind:checked={newCardMarkdown}
+					class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+				/>
+				<label
+					for="isMarkdownAdd"
+					class="ml-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
+					>Advanced Formatting (Markdown)</label
+				>
+			</div>
+			
+			{#if newCardMarkdown}
+			<div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+				<p class="mb-2 text-xs font-bold uppercase text-gray-500">Live Preview</p>
+				<div class="text-center">
+					<div class="border-b border-gray-200 pb-3 dark:border-gray-700">
+						<div class="text-xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+							{#if newCardTerm}
+								{@html parseMarkdown(newCardTerm)}
+							{:else}
+								<span class="text-gray-400">Term...</span>
+							{/if}
+						</div>
+					</div>
+					<div class="pt-3">
+						<div class="text-lg whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+							{#if newCardDef}
+								{@html parseMarkdown(newCardDef)}
+							{:else}
+								<span class="text-gray-400">Definition...</span>
+							{/if}
+						</div>
+					</div>
+				</div>
+			</div>
+			{/if}
+
 			<div class="mt-6 flex justify-end gap-3">
 				<button
 					type="button"
@@ -382,6 +440,40 @@
 									class="w-full rounded-xl border border-gray-300 bg-white p-3 text-gray-700 focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
 								></textarea>
 							</div>
+
+							<div class="mt-4 flex items-center">
+								<input
+									type="checkbox"
+									name="isMarkdown"
+									id="isMarkdownEdit"
+									bind:checked={editCardMarkdown}
+									class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+								/>
+								<label
+									for="isMarkdownEdit"
+									class="ml-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
+									>Advanced Formatting (Markdown)</label
+								>
+							</div>
+
+							{#if editCardMarkdown}
+							<div class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+								<p class="mb-2 text-xs font-bold uppercase text-gray-500">Live Preview</p>
+								<div class="text-center">
+									<div class="border-b border-gray-200 pb-3 dark:border-gray-700">
+										<div class="text-xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+											{@html parseMarkdown(editCardTerm)}
+										</div>
+									</div>
+									<div class="pt-3">
+										<div class="text-lg whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+											{@html parseMarkdown(editCardDef)}
+										</div>
+									</div>
+								</div>
+							</div>
+							{/if}
+
 							<div class="mt-3 flex justify-end gap-2">
 								<button
 									type="button"
@@ -399,16 +491,24 @@
 					{:else}
 						<div class="flex flex-col gap-4 text-center">
 							<div class="border-b border-gray-100 pb-4 dark:border-gray-800">
-								<p
+								<div
 									class="text-3xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100"
 								>
-									{card.term}
-								</p>
+									{#if card.isMarkdown}
+										{@html parseMarkdown(card.term)}
+									{:else}
+										{card.term}
+									{/if}
+								</div>
 							</div>
 							<div>
-								<p class="text-xl whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-									{card.definition}
-								</p>
+								<div class="text-xl whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+									{#if card.isMarkdown}
+										{@html parseMarkdown(card.definition)}
+									{:else}
+										{card.definition}
+									{/if}
+								</div>
 							</div>
 						</div>
 
@@ -469,7 +569,7 @@
 
 							<div class="flex items-center gap-2">
 								<button
-									onclick={() => isOwner && startEditCard(card.id, card.term, card.definition)}
+									onclick={() => isOwner && startEditCard(card.id, card.term, card.definition, card.isMarkdown)}
 									disabled={!isOwner}
 									class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner
 										? 'text-gray-500 hover:bg-gray-100 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-blue-400'
