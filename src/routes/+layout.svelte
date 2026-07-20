@@ -3,6 +3,7 @@
 	import type { LayoutServerData } from './$types';
 	import { page } from '$app/state';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import Toast from '$lib/components/Toast.svelte';
 
 	let { data, children }: { data: LayoutServerData; children: import('svelte').Snippet } = $props();
 </script>
@@ -140,3 +141,5 @@
 {:else}
 	{@render children()}
 {/if}
+
+<Toast />
