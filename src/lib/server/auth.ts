@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { building } from '$app/environment';
 import { betterAuth } from 'better-auth/minimal';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
@@ -19,11 +20,13 @@ const authConfig = {
 	]
 } satisfies Omit<Parameters<typeof betterAuth>[0], 'database'>;
 
-export const createAuth = (d1: D1Database) =>
-	betterAuth({
+export const createAuth = (d1: D1Database) => {
+	if (building) return {} as any;
+	return betterAuth({
 		...authConfig,
 		database: drizzleAdapter(getDb(d1), { provider: 'sqlite' })
 	});
+};
 
 /**
  * DO NOT USE!
@@ -31,4 +34,4 @@ export const createAuth = (d1: D1Database) =>
  * This instance is used by the `better-auth` CLI for schema generation ONLY.
  * To access `auth` at runtime, use `event.locals.auth`.
  */
-export const auth = createAuth(null!);
+export const auth = building ? ({} as any) : createAuth(null!);
