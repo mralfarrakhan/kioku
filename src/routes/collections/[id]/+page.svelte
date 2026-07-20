@@ -8,8 +8,11 @@
 	let isOwner = $derived(data.collection.userId === page.data.user?.id);
 
 	let showEditCollection = $state(false);
-	let showCreateCard = $state(false);
 	let showQuizOptions = $state(false);
+
+	let createCardDialog: HTMLDialogElement | undefined = $state();
+	let createCardError = $state<string | null>(null);
+	let termInputEl: HTMLTextAreaElement | undefined = $state();
 
 	let editCardId = $state<string | null>(null);
 	let editCardTerm = $state('');
@@ -62,7 +65,7 @@
 					Edit Info
 				</button>
 				<button
-					onclick={() => (showCreateCard = true)}
+					onclick={() => createCardDialog?.showModal()}
 					class="rounded-xl bg-blue-500 px-4 py-2 font-bold text-white shadow-sm transition hover:bg-blue-600 hover:shadow"
 				>
 					+ Add Card
@@ -138,50 +141,88 @@
 	</div>
 {/if}
 
-{#if showCreateCard && isOwner}
-	<div
-		class="mb-8 rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-sm dark:border-blue-900/50 dark:bg-blue-900/20"
+{#if isOwner}
+	<dialog
+		bind:this={createCardDialog}
+		onclose={() => (createCardError = null)}
+		class="m-auto w-full max-w-2xl rounded-2xl border-0 bg-white p-6 shadow-2xl backdrop:bg-gray-900/50 backdrop:backdrop-blur-sm dark:border dark:border-gray-800 dark:bg-gray-900"
 	>
-		<h2 class="mb-4 text-xl font-bold text-blue-900 dark:text-blue-300">Add New Flashcard</h2>
+		<div class="mb-4 flex items-center justify-between">
+			<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">Add New Flashcard</h2>
+			<button
+				type="button"
+				onclick={() => createCardDialog?.close()}
+				class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="24"
+					height="24"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg
+				>
+			</button>
+		</div>
+
+		{#if createCardError}
+			<div
+				class="mb-4 rounded-xl bg-red-50 p-4 text-sm font-bold text-red-600 dark:bg-red-900/20 dark:text-red-400"
+			>
+				{createCardError}
+			</div>
+		{/if}
+
 		<form
 			method="post"
 			action="?/createFlashcard"
 			use:enhance={() => {
-				return async ({ update, formElement }) => {
-					await update();
-					formElement.reset();
-					// Keep open for adding multiple cards quickly
+				createCardError = null;
+				return async ({ result, update, formElement }) => {
+					if (result.type === 'failure') {
+						createCardError = result.data?.message as string;
+					} else if (result.type === 'success') {
+						await update();
+						formElement.reset();
+						termInputEl?.focus();
+					}
 				};
 			}}
 		>
 			<div class="grid gap-4 md:grid-cols-2">
 				<div>
-					<label class="block text-sm font-semibold text-blue-900 dark:text-blue-300"
+					<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
 						>Term / Question</label
 					>
 					<textarea
 						name="term"
 						required
 						rows="3"
-						class="mt-1 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none dark:border-blue-800 dark:bg-gray-800 dark:text-gray-100"
+						maxlength="255"
+						bind:this={termInputEl}
+						class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
 					></textarea>
 				</div>
 				<div>
-					<label class="block text-sm font-semibold text-blue-900 dark:text-blue-300"
+					<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
 						>Definition / Answer</label
 					>
 					<textarea
 						name="definition"
 						required
 						rows="3"
-						class="mt-1 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none dark:border-blue-800 dark:bg-gray-800 dark:text-gray-100"
+						maxlength="1000"
+						class="mt-1 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 font-medium focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
 					></textarea>
 				</div>
 			</div>
-			<div class="mt-4 flex justify-end gap-3">
+			<div class="mt-6 flex justify-end gap-3">
 				<button
 					type="button"
-					onclick={() => (showCreateCard = false)}
+					onclick={() => createCardDialog?.close()}
 					class="rounded-xl bg-gray-200 px-4 py-2 font-bold text-gray-700 transition hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 					>Done</button
 				>
@@ -192,7 +233,7 @@
 				>
 			</div>
 		</form>
-	</div>
+	</dialog>
 {/if}
 
 <div
@@ -429,8 +470,9 @@
 								<button
 									onclick={() => isOwner && startEditCard(card.id, card.term, card.definition)}
 									disabled={!isOwner}
-									class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner ? 'text-gray-500 hover:bg-gray-100 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-blue-400' : 'text-gray-300 cursor-not-allowed dark:text-gray-700'}"
-									>Edit</button
+									class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner
+										? 'text-gray-500 hover:bg-gray-100 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-blue-400'
+										: 'cursor-not-allowed text-gray-300 dark:text-gray-700'}">Edit</button
 								>
 								<form
 									method="post"
@@ -448,8 +490,9 @@
 									<button
 										type="submit"
 										disabled={!isOwner}
-										class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner ? 'text-gray-500 hover:bg-red-50 hover:text-red-500 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400' : 'text-gray-300 cursor-not-allowed dark:text-gray-700'}"
-										>Delete</button
+										class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner
+											? 'text-gray-500 hover:bg-red-50 hover:text-red-500 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400'
+											: 'cursor-not-allowed text-gray-300 dark:text-gray-700'}">Delete</button
 									>
 								</form>
 							</div>

@@ -100,11 +100,27 @@ export const actions: Actions = {
 			.where(and(eq(collection.id, id), eq(collection.userId, user.id)));
 		if (cols.length === 0) return fail(403, { message: 'Forbidden' });
 
+		// Check for duplicate terms
+		const existingCards = await db
+			.select({ term: flashcard.term })
+			.from(flashcard)
+			.where(eq(flashcard.collectionId, id));
+
+		const isDuplicate = existingCards.some(
+			(card) => card.term.trim().toLowerCase() === term.trim().toLowerCase()
+		);
+
+		if (isDuplicate) {
+			return fail(400, {
+				message: 'A flashcard with this term already exists in this collection.'
+			});
+		}
+
 		try {
 			await db.insert(flashcard).values({
 				collectionId: id,
-				term,
-				definition
+				term: term.trim(),
+				definition: definition.trim()
 			});
 			return { success: true };
 		} catch (e) {
