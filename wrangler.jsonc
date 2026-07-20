@@ -14,7 +14,7 @@
 		{
 			"binding": "DB",
 			"database_name": "kioku-db",
-			"database_id": "0db8db1c-6d4b-4a82-b483-698bb53f8c71",
+			"database_id": "af108532-6617-4a4b-a514-38ae3a69a9cd",
 			"migrations_dir": "drizzle"
 		}
 	],
