@@ -8,6 +8,10 @@
 	let quizCards = $state(data.quiz);
 	let currentIndex = $state(0);
 
+	let isRetryPhase = $state(false);
+	let incorrectQueue = $state<typeof quizCards>([]);
+	let originalQuizLength = data.quiz.length;
+
 	let currentCard = $derived(quizCards[currentIndex]);
 	let isFinished = $derived(currentIndex >= quizCards.length);
 
@@ -34,67 +38,80 @@
 		isCorrect = option === currentCard.correctAnswer;
 
 		const responseTimeMs = Date.now() - questionStartTime;
-
-		if (isCorrect) totalCorrect++;
-		totalResponseTime += responseTimeMs;
-		answeredCards++;
-
-		// Submit the result asynchronously
-		const formData = new FormData();
-		formData.append('flashcardId', currentCard.flashcardId);
-		formData.append('isCorrect', String(isCorrect));
-		formData.append('responseTimeMs', String(responseTimeMs));
-
-		const response = await fetch('?/recordResult', {
-			method: 'POST',
-			body: formData
-		});
-
-		const result = deserialize(await response.text());
 		let delayBeforeNext = isCorrect ? 1500 : 2500;
 
-		if (result.type === 'success' && result.data) {
-			oldScore = result.data.oldScore as number;
-			
-			ringTransition = 'none';
-			displayProgress = oldScore % 100;
-			displayLevel = Math.floor(oldScore / 100);
+		if (!isRetryPhase) {
+			if (isCorrect) totalCorrect++;
+			totalResponseTime += responseTimeMs;
+			answeredCards++;
 
-			// short delay so the ring renders at the old score first, then animates to the new score
-			setTimeout(() => {
-				newScore = result.data?.newScore as number;
-				const oldSc = oldScore as number;
-				fluencyChange = newScore - oldSc;
+			if (!isCorrect) incorrectQueue.push(currentCard);
 
-				const newLevel = Math.floor(newScore / 100);
-				const newProgress = newScore % 100;
+			// Submit the result asynchronously
+			const formData = new FormData();
+			formData.append('flashcardId', currentCard.flashcardId);
+			formData.append('isCorrect', String(isCorrect));
+			formData.append('responseTimeMs', String(responseTimeMs));
 
-				ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+			const response = await fetch('?/recordResult', {
+				method: 'POST',
+				body: formData
+			});
 
-				if (newLevel !== displayLevel) {
-					delayBeforeNext += 1000; // Give extra time for multi-phase animation
-					displayProgress = newLevel > displayLevel ? 100 : 0;
-					
-					setTimeout(() => {
-						ringTransition = 'none';
-						displayProgress = newLevel > displayLevel ? 0 : 100;
-						displayLevel = newLevel;
+			const result = deserialize(await response.text());
+
+			if (result.type === 'success' && result.data) {
+				oldScore = result.data.oldScore as number;
+				
+				ringTransition = 'none';
+				displayProgress = oldScore % 100;
+				displayLevel = Math.floor(oldScore / 100);
+
+				// short delay so the ring renders at the old score first, then animates to the new score
+				setTimeout(() => {
+					newScore = result.data?.newScore as number;
+					const oldSc = oldScore as number;
+					fluencyChange = newScore - oldSc;
+
+					const newLevel = Math.floor(newScore / 100);
+					const newProgress = newScore % 100;
+
+					ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+
+					if (newLevel !== displayLevel) {
+						delayBeforeNext += 1000; // Give extra time for multi-phase animation
+						displayProgress = newLevel > displayLevel ? 100 : 0;
 						
 						setTimeout(() => {
-							ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-							displayProgress = newProgress;
-						}, 50);
-					}, 800); // Wait for first phase of animation
-				} else {
-					displayProgress = newProgress;
-				}
-			}, 50);
+							ringTransition = 'none';
+							displayProgress = newLevel > displayLevel ? 0 : 100;
+							displayLevel = newLevel;
+							
+							setTimeout(() => {
+								ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+								displayProgress = newProgress;
+							}, 50);
+						}, 800); // Wait for first phase of animation
+					} else {
+						displayProgress = newProgress;
+					}
+				}, 50);
+			}
+		} else {
+			if (!isCorrect) incorrectQueue.push(currentCard);
 		}
 
 		// Move to next question after delay
 		setTimeout(
 			() => {
 				currentIndex++;
+				if (currentIndex >= quizCards.length && incorrectQueue.length > 0) {
+					isRetryPhase = true;
+					quizCards = [...incorrectQueue];
+					incorrectQueue = [];
+					currentIndex = 0;
+				}
+
 				selectedOption = null;
 				isCorrect = null;
 				oldScore = null;
@@ -105,7 +122,20 @@
 			delayBeforeNext
 		);
 	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (selectedOption !== null || isFinished) return;
+		const key = event.key;
+		if (['1', '2', '3', '4'].includes(key)) {
+			const idx = parseInt(key) - 1;
+			if (idx >= 0 && idx < currentCard.options.length) {
+				handleOptionClick(currentCard.options[idx]);
+			}
+		}
+	}
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="mx-auto flex h-[calc(100vh-8rem)] max-w-2xl flex-col px-4 py-8">
 	<div class="mb-8 flex items-center gap-4">
@@ -127,13 +157,19 @@
 		</a>
 		<div class="h-4 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
 			<div
-				class="h-full bg-green-500 transition-all duration-300 ease-out"
+				class="h-full transition-all duration-300 ease-out {isRetryPhase ? 'bg-orange-500' : 'bg-green-500'}"
 				style="width: {(currentIndex / quizCards.length) * 100}%"
 			></div>
 		</div>
-		<span class="text-sm font-bold text-gray-500 dark:text-gray-400"
-			>{currentIndex}/{quizCards.length}</span
-		>
+		{#if isRetryPhase}
+			<span class="text-sm font-bold text-orange-500 dark:text-orange-400">
+				Retry {currentIndex}/{quizCards.length}
+			</span>
+		{:else}
+			<span class="text-sm font-bold text-gray-500 dark:text-gray-400"
+				>{currentIndex}/{quizCards.length}</span
+			>
+		{/if}
 	</div>
 
 	<div class="flex flex-1 flex-col justify-center">
@@ -146,8 +182,8 @@
 				</h2>
 			</div>
 
-			<div class="grid gap-4 md:grid-cols-2">
-				{#each currentCard.options as option}
+			<div class="flex flex-col gap-4">
+				{#each currentCard.options as option, index}
 					<button
 						onclick={() => handleOptionClick(option)}
 						disabled={selectedOption !== null}
@@ -168,7 +204,10 @@
 							? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500'
 							: ''}"
 					>
-						{option}
+						<div class="absolute left-4 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border-2 border-current font-bold opacity-50">
+							{index + 1}
+						</div>
+						<span class="pl-12">{option}</span>
 					</button>
 				{/each}
 			</div>
@@ -294,7 +333,7 @@
 						class="rounded-2xl border-2 border-gray-200 bg-white p-4 text-center dark:border-gray-800 dark:bg-gray-900"
 					>
 						<div class="text-3xl font-extrabold text-blue-500">
-							{Math.round((totalCorrect / quizCards.length) * 100)}%
+							{Math.round((totalCorrect / originalQuizLength) * 100)}%
 						</div>
 						<div class="text-sm font-bold text-gray-400 dark:text-gray-500">Accuracy</div>
 					</div>
@@ -302,7 +341,7 @@
 						class="rounded-2xl border-2 border-gray-200 bg-white p-4 text-center dark:border-gray-800 dark:bg-gray-900"
 					>
 						<div class="text-3xl font-extrabold text-orange-500">
-							{(totalResponseTime / quizCards.length / 1000).toFixed(1)}s
+							{(totalResponseTime / originalQuizLength / 1000).toFixed(1)}s
 						</div>
 						<div class="text-sm font-bold text-gray-400 dark:text-gray-500">Avg Speed</div>
 					</div>
