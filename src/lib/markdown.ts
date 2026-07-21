@@ -1,5 +1,4 @@
 import { marked, type TokenizerAndRendererExtension } from 'marked';
-import DOMPurify from 'isomorphic-dompurify';
 
 // Custom extension for [text]{color}
 const colorExtension: TokenizerAndRendererExtension = {
@@ -43,8 +42,5 @@ export function parseMarkdown(text: string | null | undefined): string {
 
 	const rawHtml = marked.parseInline(escapedText, { async: false, breaks: true }) as string;
 
-	return DOMPurify.sanitize(rawHtml, {
-		ALLOWED_TAGS: ['strong', 'em', 'del', 'span', 'br'],
-		ALLOWED_ATTR: ['style']
-	});
+	return rawHtml;
 }

@@ -1,7 +1,7 @@
 ## Project Configuration
 
 - **Language**: TypeScript
-- **Package Manager**: bun
+- **Package Manager**: bun (STRICTLY use `bun` or `bun run` instead of `npm` or `npx` or `yarn` for all commands)
 - **Add-ons**: prettier, eslint, tailwindcss, sveltekit-adapter, better-auth, mcp, drizzle
 
 ---
