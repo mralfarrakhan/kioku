@@ -1,0 +1,1 @@
+ALTER TABLE `flashcard` ADD `tags` text DEFAULT '[]' NOT NULL;

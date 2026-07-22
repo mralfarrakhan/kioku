@@ -26,8 +26,7 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	// Pagination parameters
-	const url = new URL(event.request.url);
-	const page = parseInt(url.searchParams.get('page') || '1') || 1;
+	const page = parseInt(event.url.searchParams.get('page') || '1') || 1;
 	const pageSize = 20;
 
 	// Total count for pagination
@@ -44,6 +43,7 @@ export const load: PageServerLoad = async (event) => {
 			term: flashcard.term,
 			definition: flashcard.definition,
 			isMarkdown: flashcard.isMarkdown,
+			tags: flashcard.tags,
 			collectionId: flashcard.collectionId,
 			createdAt: flashcard.createdAt,
 			updatedAt: flashcard.updatedAt,
@@ -62,9 +62,17 @@ export const load: PageServerLoad = async (event) => {
 		.limit(pageSize)
 		.offset((page - 1) * pageSize);
 
+	const allTagsResult = await db
+		.select({ tags: flashcard.tags })
+		.from(flashcard)
+		.where(eq(flashcard.collectionId, id));
+	
+	const allUniqueTags = Array.from(new Set(allTagsResult.flatMap(c => c.tags || [])));
+
 	return {
 		collection: coll,
 		flashcards,
+		allUniqueTags,
 		pagination: {
 			page,
 			totalPages,
@@ -108,6 +116,13 @@ export const actions: Actions = {
 		const term = formData.get('term')?.toString();
 		const definition = formData.get('definition')?.toString();
 		const isMarkdown = formData.get('isMarkdown')?.toString() === 'on';
+		
+		let tags: string[] = [];
+		try {
+			tags = JSON.parse(formData.get('tags')?.toString() || '[]');
+		} catch (e) {
+			// Ignore JSON parsing errors
+		}
 
 		if (!term || !definition) {
 			return fail(400, { message: 'Term and definition are required' });
@@ -143,7 +158,8 @@ export const actions: Actions = {
 				collectionId: id,
 				term: term.trim(),
 				definition: definition.trim(),
-				isMarkdown
+				isMarkdown,
+				tags
 			});
 			return { success: true };
 		} catch (e) {
@@ -162,6 +178,13 @@ export const actions: Actions = {
 		const definition = formData.get('definition')?.toString();
 		const isMarkdown = formData.get('isMarkdown')?.toString() === 'on';
 
+		let tags: string[] = [];
+		try {
+			tags = JSON.parse(formData.get('tags')?.toString() || '[]');
+		} catch (e) {
+			// Ignore JSON parsing errors
+		}
+
 		if (!flashcardId || !term || !definition) return fail(400, { message: 'Missing fields' });
 
 		const db = getDb(event.platform?.env?.DB as D1Database);
@@ -176,7 +199,7 @@ export const actions: Actions = {
 		try {
 			await db
 				.update(flashcard)
-				.set({ term, definition, isMarkdown })
+				.set({ term, definition, isMarkdown, tags })
 				.where(and(eq(flashcard.id, flashcardId), eq(flashcard.collectionId, collectionId)));
 			return { success: true };
 		} catch (e) {

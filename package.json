@@ -18,7 +18,8 @@
 		"db:migrate:prod": "wrangler d1 migrations apply kioku-db --remote",
 		"db:migrate:dev": "wrangler d1 migrations apply kioku-db",
 		"db:studio": "drizzle-kit studio",
-		"auth:schema": "better-auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes"
+		"auth:schema": "better-auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes",
+		"deploy": "wrangler types --check && vite build && wrangler deploy"
 	},
 	"devDependencies": {
 		"@better-auth/cli": "~1.4.21",
@@ -47,7 +48,7 @@
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.64.0",
 		"vite": "^8.1.5",
-		"wrangler": "^4.112.0"
+		"wrangler": "^4.113.0"
 	},
 	"dependencies": {
 		"marked": "^18.0.6"

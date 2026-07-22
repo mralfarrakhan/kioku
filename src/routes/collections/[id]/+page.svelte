@@ -5,10 +5,13 @@
 	import Pagination from '$lib/components/Pagination.svelte';
 	import { parseMarkdown } from '$lib/markdown';
 	import CreateFlashcardModal from '$lib/components/CreateFlashcardModal.svelte';
+	import TagInput from '$lib/components/TagInput.svelte';
+	import Tag from '$lib/components/Tag.svelte';
 
 	let { data }: { data: PageServerData } = $props();
 
 	let isOwner = $derived(data.collection.userId === page.data.user?.id);
+	let uniqueTags = $derived(data.allUniqueTags || []);
 
 	let showEditCollection = $state(false);
 	let showQuizOptions = $state(false);
@@ -19,12 +22,14 @@
 	let editCardTerm = $state('');
 	let editCardDef = $state('');
 	let editCardMarkdown = $state(false);
+	let editCardTags = $state<string[]>([]);
 
-	function startEditCard(id: string, term: string, def: string, isMarkdown: boolean) {
+	function startEditCard(id: string, term: string, def: string, isMarkdown: boolean, tags: string[] | null) {
 		editCardId = id;
 		editCardTerm = term;
 		editCardDef = def;
 		editCardMarkdown = isMarkdown;
+		editCardTags = tags || [];
 	}
 </script>
 
@@ -155,7 +160,7 @@
 {/if}
 
 {#if isOwner}
-	<CreateFlashcardModal bind:this={createCardModal} />
+	<CreateFlashcardModal bind:this={createCardModal} suggestedTags={uniqueTags} />
 {/if}
 
 <div
@@ -304,6 +309,11 @@
 								></textarea>
 							</div>
 
+							<div class="mt-4">
+								<TagInput bind:tags={editCardTags} suggestedTags={uniqueTags} />
+								<input type="hidden" name="tags" value={JSON.stringify(editCardTags)} />
+							</div>
+
 							<div class="mt-4 flex items-center">
 								<input
 									type="checkbox"
@@ -357,6 +367,13 @@
 						</form>
 					{:else}
 						<div class="flex flex-col gap-4 text-center">
+							{#if card.tags && card.tags.length > 0}
+								<div class="mb-2 flex flex-wrap items-center justify-center gap-1.5">
+									{#each card.tags as tag}
+										<Tag name={tag} />
+									{/each}
+								</div>
+							{/if}
 							<div class="border-b border-gray-100 pb-4 dark:border-gray-800">
 								<div
 									class="text-3xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100"
@@ -437,7 +454,7 @@
 							<div class="flex items-center gap-2">
 								<button
 									onclick={() =>
-										isOwner && startEditCard(card.id, card.term, card.definition, card.isMarkdown)}
+										isOwner && startEditCard(card.id, card.term, card.definition, card.isMarkdown, card.tags)}
 									disabled={!isOwner}
 									class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner
 										? 'text-gray-500 hover:bg-gray-100 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-blue-400'

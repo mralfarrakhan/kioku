@@ -2,6 +2,9 @@
 	import { enhance } from '$app/forms';
 	import { parseMarkdown } from '$lib/markdown';
 	import { toast } from '$lib/stores/toast.svelte';
+	import TagInput from './TagInput.svelte';
+
+	let { suggestedTags = [] } = $props<{ suggestedTags?: string[] }>();
 
 	let createCardDialog: HTMLDialogElement | undefined = $state();
 	let createCardError = $state<string | null>(null);
@@ -9,6 +12,7 @@
 	let newCardTerm = $state('');
 	let newCardDef = $state('');
 	let newCardMarkdown = $state(false);
+	let newCardTags = $state<string[]>([]);
 
 	export function showModal() {
 		createCardDialog?.showModal();
@@ -68,6 +72,7 @@
 					newCardTerm = '';
 					newCardDef = '';
 					newCardMarkdown = false;
+					newCardTags = [];
 					closeModal();
 					toast.success('Flashcard added successfully!');
 				}
@@ -105,6 +110,13 @@
 				></textarea>
 			</div>
 		</div>
+
+		<div class="mt-4">
+			<label class="mb-1 block text-sm font-semibold text-gray-700 dark:text-gray-300">Tags</label>
+			<TagInput bind:tags={newCardTags} {suggestedTags} />
+			<input type="hidden" name="tags" value={JSON.stringify(newCardTags)} />
+		</div>
+
 		<div class="mt-4 flex items-center">
 			<input
 				type="checkbox"

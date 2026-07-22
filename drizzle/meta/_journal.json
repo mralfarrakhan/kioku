@@ -43,6 +43,13 @@
       "when": 1784543119351,
       "tag": "0005_parallel_clea",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784656624594,
+      "tag": "0006_closed_green_goblin",
+      "breakpoints": true
     }
   ]
 }

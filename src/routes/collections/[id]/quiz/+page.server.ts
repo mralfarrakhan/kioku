@@ -118,12 +118,36 @@ export const load: PageServerLoad = async (event) => {
 
 	// Generate distractors for each card
 	const quizSession = selectedCards.map((c) => {
-		// Get 3 other random definitions from the same collection
 		const others = allCards.filter((other) => other.id !== c.id);
-		const distractors = shuffle(others)
-			.slice(0, 3)
-			.map((o) => o.definition);
+		
+		// 1. Try to find distractors that share at least one tag
+		let matchedDistractors = [];
+		const cardTags = c.tags || [];
+		
+		if (cardTags.length > 0) {
+			matchedDistractors = others.filter((other) => {
+				const otherTags = other.tags || [];
+				return otherTags.some((t) => cardTags.includes(t));
+			});
+		}
+		
+		let distractorCards = [];
+		
+		// If we have 3 or more matched distractors, just shuffle and take 3
+		if (matchedDistractors.length >= 3) {
+			distractorCards = shuffle(matchedDistractors).slice(0, 3);
+		} else {
+			// Otherwise, take all matched, and fill the rest with random others
+			const matchedIds = new Set(matchedDistractors.map((m) => m.id));
+			const remainingOthers = others.filter((o) => !matchedIds.has(o.id));
+			
+			distractorCards = [
+				...matchedDistractors,
+				...shuffle(remainingOthers).slice(0, 3 - matchedDistractors.length)
+			];
+		}
 
+		const distractors = distractorCards.map((o) => o.definition);
 		const options = shuffle([c.definition, ...distractors]);
 
 		return {

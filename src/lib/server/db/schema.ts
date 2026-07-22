@@ -38,6 +38,7 @@ export const flashcard = sqliteTable('flashcard', {
 	term: text('term').notNull(),
 	definition: text('definition').notNull(),
 	isMarkdown: integer('is_markdown', { mode: 'boolean' }).notNull().default(false),
+	tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull(),
