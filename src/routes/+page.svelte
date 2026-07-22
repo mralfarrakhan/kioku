@@ -147,10 +147,10 @@
 						<form
 							method="post"
 							action="?/deleteCollection"
-							use:enhance
-							onsubmit={(e) => {
-								if (!confirm('Are you sure you want to delete this collection?'))
-									e.preventDefault();
+							use:enhance={({ cancel }) => {
+								if (!confirm('Are you sure you want to delete this collection?')) {
+									cancel();
+								}
 							}}
 						>
 							<input type="hidden" name="id" value={collection.id} />

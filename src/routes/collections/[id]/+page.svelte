@@ -463,13 +463,10 @@
 								<form
 									method="post"
 									action="?/deleteFlashcard"
-									use:enhance
-									onsubmit={(e) => {
-										if (!isOwner) {
-											e.preventDefault();
-											return;
+									use:enhance={({ cancel }) => {
+										if (!isOwner || !confirm('Delete this card?')) {
+											cancel();
 										}
-										if (!confirm('Delete this card?')) e.preventDefault();
 									}}
 								>
 									<input type="hidden" name="id" value={card.id} />
