@@ -2,10 +2,15 @@
 	import { enhance } from '$app/forms';
 	import type { PageServerData } from './$types';
 	import Pagination from '$lib/components/Pagination.svelte';
+	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 
 	let { data }: { data: PageServerData } = $props();
 
 	let showCreateModal = $state(false);
+	
+	let confirmDeleteModal: ReturnType<typeof ConfirmModal> | undefined = $state();
+	let deleteCollectionId = $state<string | null>(null);
+	let deleteFormElement: HTMLFormElement | undefined = $state();
 </script>
 
 <div class="mb-8 flex items-center justify-between">
@@ -87,6 +92,30 @@
 	</div>
 {/if}
 
+<ConfirmModal
+	bind:this={confirmDeleteModal}
+	title="Delete Collection"
+	message="Are you sure you want to delete this collection? This will permanently delete all flashcards inside it."
+	confirmText="Delete"
+	confirmStyle="danger"
+	onconfirm={() => {
+		if (deleteFormElement) deleteFormElement.requestSubmit();
+	}}
+/>
+<form
+	bind:this={deleteFormElement}
+	method="post"
+	action="?/deleteCollection"
+	use:enhance={() => {
+		return async ({ update }) => {
+			deleteCollectionId = null;
+			await update();
+		};
+	}}
+>
+	<input type="hidden" name="id" value={deleteCollectionId} />
+</form>
+
 {#if data.collections.length === 0}
 	<div
 		class="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-12 text-center dark:border-gray-700 dark:bg-gray-900"
@@ -147,43 +176,37 @@
 					</div>
 
 					{#if collection.userId === data.user.id}
-						<!-- Use preventDefault to stop the anchor link from triggering -->
-						<form
-							method="post"
-							action="?/deleteCollection"
-							use:enhance={({ cancel }) => {
-								if (!confirm('Are you sure you want to delete this collection?')) {
-									cancel();
-								}
+						<!-- Use preventDefault and stopPropagation to stop the anchor link from triggering -->
+						<button
+							type="button"
+							class="rounded p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+							onclick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								deleteCollectionId = collection.id;
+								confirmDeleteModal?.showModal();
 							}}
 						>
-							<input type="hidden" name="id" value={collection.id} />
-							<button
-								type="submit"
-								class="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/30 dark:hover:text-red-400"
-								onclick={(e) => e.stopPropagation()}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								width="18"
+								height="18"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path
+									d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+								/><line x1="10" x2="10" y1="11" y2="17" /><line
+									x1="14"
+									x2="14"
+									y1="11"
+									y2="17"
+								/></svg
 							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="18"
-									height="18"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path
-										d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
-									/><line x1="10" x2="10" y1="11" y2="17" /><line
-										x1="14"
-										x2="14"
-										y1="11"
-										y2="17"
-									/></svg
-								>
-							</button>
-						</form>
+						</button>
 					{/if}
 				</div>
 			</a>
