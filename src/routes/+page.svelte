@@ -115,10 +115,14 @@
 						{/if}
 					</div>
 					{#if collection.description}
-						<p class="line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
+						<p class="mb-3 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
 							{collection.description}
 						</p>
 					{/if}
+					<div class="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-extrabold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+						{collection.flashcardCount} {collection.flashcardCount === 1 ? 'card' : 'cards'}
+					</div>
 				</div>
 
 				<div

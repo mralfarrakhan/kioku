@@ -7,6 +7,7 @@
 	import CreateFlashcardModal from '$lib/components/CreateFlashcardModal.svelte';
 	import TagInput from '$lib/components/TagInput.svelte';
 	import Tag from '$lib/components/Tag.svelte';
+	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 
 	let { data }: { data: PageServerData } = $props();
 
@@ -23,6 +24,10 @@
 	let editCardDef = $state('');
 	let editCardMarkdown = $state(false);
 	let editCardTags = $state<string[]>([]);
+
+	let confirmDeleteModal: ReturnType<typeof ConfirmModal> | undefined = $state();
+	let deleteCardId = $state<string | null>(null);
+	let deleteFormElement: HTMLFormElement | undefined = $state();
 
 	function startEditCard(id: string, term: string, def: string, isMarkdown: boolean, tags: string[] | null) {
 		editCardId = id;
@@ -161,6 +166,30 @@
 
 {#if isOwner}
 	<CreateFlashcardModal bind:this={createCardModal} suggestedTags={uniqueTags} />
+	
+	<ConfirmModal
+		bind:this={confirmDeleteModal}
+		title="Delete Flashcard"
+		message="Are you sure you want to delete this flashcard? This action cannot be undone."
+		confirmText="Delete"
+		confirmStyle="danger"
+		onconfirm={() => {
+			if (deleteFormElement) deleteFormElement.requestSubmit();
+		}}
+	/>
+	<form
+		bind:this={deleteFormElement}
+		method="post"
+		action="?/deleteFlashcard"
+		use:enhance={() => {
+			return async ({ update }) => {
+				deleteCardId = null;
+				await update();
+			};
+		}}
+	>
+		<input type="hidden" name="id" value={deleteCardId} />
+	</form>
 {/if}
 
 <div
@@ -174,7 +203,7 @@
 	</div>
 
 	<div class="flex items-center gap-3">
-		{#if data.flashcards.length >= 4}
+		{#if data.pagination.totalItems >= 4}
 			<div class="relative flex items-center gap-2">
 				<a
 					href="/collections/{data.collection.id}/quiz?count=20"
@@ -252,7 +281,7 @@
 					Review Now
 				</div>
 				<p class="text-sm font-medium text-gray-500 dark:text-gray-400">
-					Add {4 - data.flashcards.length} more card{data.flashcards.length === 3 ? '' : 's'} to unlock.
+					Add {4 - data.pagination.totalItems} more card{data.pagination.totalItems === 3 ? '' : 's'} to unlock.
 				</p>
 			</div>
 		{/if}
@@ -265,7 +294,7 @@
 	>
 		<h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
 			Flashcards <span class="text-sm text-gray-400 dark:text-gray-500"
-				>({data.flashcards.length})</span
+				>({data.pagination.totalItems})</span
 			>
 		</h2>
 	</div>
@@ -460,24 +489,19 @@
 										? 'text-gray-500 hover:bg-gray-100 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-blue-400'
 										: 'cursor-not-allowed text-gray-300 dark:text-gray-700'}">Edit</button
 								>
-								<form
-									method="post"
-									action="?/deleteFlashcard"
-									use:enhance={({ cancel }) => {
-										if (!isOwner || !confirm('Delete this card?')) {
-											cancel();
+								<button
+									type="button"
+									onclick={() => {
+										if (isOwner) {
+											deleteCardId = card.id;
+											confirmDeleteModal?.showModal();
 										}
 									}}
+									disabled={!isOwner}
+									class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner
+										? 'text-gray-500 hover:bg-red-50 hover:text-red-500 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400'
+										: 'cursor-not-allowed text-gray-300 dark:text-gray-700'}">Delete</button
 								>
-									<input type="hidden" name="id" value={card.id} />
-									<button
-										type="submit"
-										disabled={!isOwner}
-										class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner
-											? 'text-gray-500 hover:bg-red-50 hover:text-red-500 dark:text-gray-400 dark:hover:bg-red-900/30 dark:hover:text-red-400'
-											: 'cursor-not-allowed text-gray-300 dark:text-gray-700'}">Delete</button
-									>
-								</form>
 							</div>
 						</div>
 					{/if}

@@ -3,6 +3,8 @@
 	import type { PageServerData } from './$types';
 	import { onMount } from 'svelte';
 	import { parseMarkdown } from '$lib/markdown';
+	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
+	import { goto } from '$app/navigation';
 
 	let { data }: { data: PageServerData } = $props();
 
@@ -31,6 +33,16 @@
 	let displayProgress = $state<number>(0);
 	let displayLevel = $state<number>(0);
 	let ringTransition = $state('stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)');
+
+	let confirmExitModal: ReturnType<typeof ConfirmModal> | undefined = $state();
+
+	function handleExit() {
+		if (currentIndex > 0 || isRetryPhase) {
+			confirmExitModal?.showModal();
+		} else {
+			goto(`/collections/${data.collection.id}`);
+		}
+	}
 
 	async function handleOptionClick(option: string) {
 		if (selectedOption !== null) return; // Prevent double-clicking
@@ -135,10 +147,22 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
+<ConfirmModal
+	bind:this={confirmExitModal}
+	title="Exit Quiz"
+	message="Are you sure you want to end this quiz early? Your progress in this session will not be completed."
+	confirmText="Exit"
+	confirmStyle="danger"
+	onconfirm={() => {
+		goto(`/collections/${data.collection.id}`);
+	}}
+/>
+
 <div class="mx-auto flex h-[calc(100vh-8rem)] max-w-2xl flex-col px-4 py-8">
 	<div class="mb-8 flex items-center gap-4">
-		<a
-			href="/collections/{data.collection.id}"
+		<button
+			onclick={handleExit}
+			title="Exit Quiz"
 			class="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
 		>
 			<svg
@@ -152,7 +176,7 @@
 				stroke-linecap="round"
 				stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg
 			>
-		</a>
+		</button>
 		<div class="h-4 flex-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
 			<div
 				class="h-full transition-all duration-300 ease-out {isRetryPhase

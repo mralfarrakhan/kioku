@@ -1,7 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
-import { collection, user } from '$lib/server/db/schema';
+import { collection, user, flashcard } from '$lib/server/db/schema';
 import { eq, or, and, desc, count } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
@@ -34,11 +34,14 @@ export const load: PageServerLoad = async (event) => {
 			createdAt: collection.createdAt,
 			updatedAt: collection.updatedAt,
 			userId: collection.userId,
-			authorName: user.name
+			authorName: user.name,
+			flashcardCount: count(flashcard.id)
 		})
 		.from(collection)
 		.leftJoin(user, eq(collection.userId, user.id))
+		.leftJoin(flashcard, eq(collection.id, flashcard.collectionId))
 		.where(or(eq(collection.userId, event.locals.user.id), eq(collection.isShared, true)))
+		.groupBy(collection.id)
 		.orderBy(desc(collection.updatedAt), desc(collection.createdAt))
 		.limit(pageSize)
 		.offset((page - 1) * pageSize);

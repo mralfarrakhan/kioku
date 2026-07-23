@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { collection, flashcard, userFlashcardProgress } from '$lib/server/db/schema';
 import { eq, and, desc, inArray } from 'drizzle-orm';
+import { QUIZ_CONFIG } from '$lib/config';
 
 // Simple shuffle function
 function shuffle<T>(array: T[]): T[] {
@@ -120,31 +121,38 @@ export const load: PageServerLoad = async (event) => {
 	const quizSession = selectedCards.map((c) => {
 		const others = allCards.filter((other) => other.id !== c.id);
 		
-		// 1. Try to find distractors that share at least one tag
-		let matchedDistractors = [];
 		const cardTags = c.tags || [];
 		
-		if (cardTags.length > 0) {
-			matchedDistractors = others.filter((other) => {
-				const otherTags = other.tags || [];
-				return otherTags.some((t) => cardTags.includes(t));
-			});
+		// Group others by the number of shared tags
+		const matchGroups = new Map<number, typeof others>();
+		
+		for (const other of others) {
+			const otherTags = other.tags || [];
+			let sharedCount = 0;
+			if (cardTags.length > 0 && otherTags.length > 0) {
+				sharedCount = otherTags.filter((t) => cardTags.includes(t)).length;
+			}
+			
+			if (!matchGroups.has(sharedCount)) {
+				matchGroups.set(sharedCount, []);
+			}
+			matchGroups.get(sharedCount)!.push(other);
 		}
 		
-		let distractorCards = [];
+		// Sort the match counts descending
+		const sortedMatchCounts = Array.from(matchGroups.keys()).sort((a, b) => b - a);
 		
-		// If we have 3 or more matched distractors, just shuffle and take 3
-		if (matchedDistractors.length >= 3) {
-			distractorCards = shuffle(matchedDistractors).slice(0, 3);
-		} else {
-			// Otherwise, take all matched, and fill the rest with random others
-			const matchedIds = new Set(matchedDistractors.map((m) => m.id));
-			const remainingOthers = others.filter((o) => !matchedIds.has(o.id));
+		let distractorCards: typeof others = [];
+		
+		// Pick from highest match groups downwards
+		for (const matchCount of sortedMatchCounts) {
+			if (distractorCards.length >= 3) break;
 			
-			distractorCards = [
-				...matchedDistractors,
-				...shuffle(remainingOthers).slice(0, 3 - matchedDistractors.length)
-			];
+			const group = matchGroups.get(matchCount)!;
+			const shuffledGroup = shuffle([...group]);
+			
+			const needed = 3 - distractorCards.length;
+			distractorCards.push(...shuffledGroup.slice(0, needed));
 		}
 
 		const distractors = distractorCards.map((o) => o.definition);
@@ -181,11 +189,11 @@ export const actions: Actions = {
 		// Determine SM-2 Quality (1-5)
 		let quality = 1;
 		if (isCorrect) {
-			if (responseTimeMs <= 3000) quality = 5;
-			else if (responseTimeMs <= 5000) quality = 4;
+			if (responseTimeMs <= QUIZ_CONFIG.fluency.fastResponseThresholdMs) quality = 5;
+			else if (responseTimeMs <= QUIZ_CONFIG.fluency.averageResponseThresholdMs) quality = 4;
 			else quality = 3;
 		} else {
-			if (responseTimeMs <= 3000) quality = 2;
+			if (responseTimeMs <= QUIZ_CONFIG.fluency.fastResponseThresholdMs) quality = 2;
 			else quality = 1;
 		}
 
