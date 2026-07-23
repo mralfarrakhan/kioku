@@ -1,14 +1,7 @@
 <script lang="ts">
-	let { name, onremove } = $props<{ name: string; onremove?: () => void }>();
+	import { stringToColor } from '$lib/color';
 
-	function stringToColor(str: string): string {
-		let hash = 0;
-		for (let i = 0; i < str.length; i++) {
-			hash = str.charCodeAt(i) + ((hash << 5) - hash);
-		}
-		const hue = Math.abs(hash % 360);
-		return `hsl(${hue}, 70%, 65%)`;
-	}
+	let { name, onremove } = $props<{ name: string; onremove?: () => void }>();
 
 	let tagColor = $derived(stringToColor(name));
 </script>

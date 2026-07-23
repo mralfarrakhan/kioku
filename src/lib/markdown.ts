@@ -1,4 +1,5 @@
 import { marked, type TokenizerAndRendererExtension } from 'marked';
+import { stringToColor } from '$lib/color';
 
 // Custom extension for [text]{color}
 const colorExtension: TokenizerAndRendererExtension = {
@@ -21,8 +22,18 @@ const colorExtension: TokenizerAndRendererExtension = {
 		}
 	},
 	renderer(token: any) {
-		// sanitize color value
-		const safeColor = token.color.replace(/[^a-zA-Z0-9#\(\),.\s-]/g, '').trim();
+		// sanitize color value, allow @ for seed indicator
+		let safeColor = token.color.replace(/[^a-zA-Z0-9#\(\),.\s-@]/g, '').trim();
+
+		if (safeColor.startsWith('@')) {
+			let seed = safeColor.slice(1).trim();
+			if (!seed) {
+				seed = token.text; // fallback to text itself if just {@}
+			}
+			// Use a higher saturation and lower lightness for better text contrast
+			safeColor = stringToColor(seed, 80, 50);
+		}
+
 		return `<span style="color: ${safeColor};">${this.parser.parseInline(token.tokens)}</span>`;
 	}
 };
