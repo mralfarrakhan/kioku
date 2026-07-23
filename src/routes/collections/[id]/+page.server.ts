@@ -62,12 +62,26 @@ export const load: PageServerLoad = async (event) => {
 		.limit(pageSize)
 		.offset((page - 1) * pageSize);
 
-	const allTagsResult = await db
-		.select({ tags: flashcard.tags })
-		.from(flashcard)
-		.where(eq(flashcard.collectionId, id));
-	
-	const allUniqueTags = Array.from(new Set(allTagsResult.flatMap(c => c.tags || [])));
+	const d1 = event.platform?.env?.DB as D1Database | undefined;
+	let allUniqueTags: string[] = [];
+
+	if (d1) {
+		const result = await d1
+			.prepare(
+				`SELECT DISTINCT json_each.value as tag FROM flashcard, json_each(flashcard.tags) WHERE flashcard.collection_id = ?`
+			)
+			.bind(id)
+			.all<{ tag: string }>();
+		allUniqueTags = result.results.map((r) => r.tag).filter(Boolean);
+	} else {
+		// Fallback for environment without D1 bound (e.g. some dev setups)
+		const allTagsResult = await db
+			.select({ tags: flashcard.tags })
+			.from(flashcard)
+			.where(eq(flashcard.collectionId, id));
+
+		allUniqueTags = Array.from(new Set(allTagsResult.flatMap((c) => c.tags || [])));
+	}
 
 	return {
 		collection: coll,
@@ -119,10 +133,24 @@ export const actions: Actions = {
 		
 		let tags: string[] = [];
 		try {
-			tags = JSON.parse(formData.get('tags')?.toString() || '[]');
+			const parsed = JSON.parse(formData.get('tags')?.toString() || '[]');
+			if (Array.isArray(parsed)) {
+				tags = parsed;
+			} else {
+				return fail(400, { message: 'Tags must be an array' });
+			}
 		} catch (e) {
-			// Ignore JSON parsing errors
+			return fail(400, { message: 'Invalid tags format' });
 		}
+
+		// Validation rules for tags
+		if (tags.length > 20) return fail(400, { message: 'Maximum 20 tags allowed' });
+		tags = tags.map((t) => t.trim().toLowerCase());
+		if (tags.some((t) => t.length > 16))
+			return fail(400, { message: 'Tag cannot exceed 16 characters' });
+		if (tags.some((t) => !/^[a-z]+$/.test(t)))
+			return fail(400, { message: 'Tags can only contain alphabetic characters' });
+		tags = Array.from(new Set(tags));
 
 		if (!term || !definition) {
 			return fail(400, { message: 'Term and definition are required' });
@@ -180,10 +208,24 @@ export const actions: Actions = {
 
 		let tags: string[] = [];
 		try {
-			tags = JSON.parse(formData.get('tags')?.toString() || '[]');
+			const parsed = JSON.parse(formData.get('tags')?.toString() || '[]');
+			if (Array.isArray(parsed)) {
+				tags = parsed;
+			} else {
+				return fail(400, { message: 'Tags must be an array' });
+			}
 		} catch (e) {
-			// Ignore JSON parsing errors
+			return fail(400, { message: 'Invalid tags format' });
 		}
+
+		// Validation rules for tags
+		if (tags.length > 20) return fail(400, { message: 'Maximum 20 tags allowed' });
+		tags = tags.map((t) => t.trim().toLowerCase());
+		if (tags.some((t) => t.length > 16))
+			return fail(400, { message: 'Tag cannot exceed 16 characters' });
+		if (tags.some((t) => !/^[a-z]+$/.test(t)))
+			return fail(400, { message: 'Tags can only contain alphabetic characters' });
+		tags = Array.from(new Set(tags));
 
 		if (!flashcardId || !term || !definition) return fail(400, { message: 'Missing fields' });
 

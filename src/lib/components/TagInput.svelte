@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Tag from './Tag.svelte';
+	import { toast } from '$lib/stores/toast.svelte';
 
 	let { tags = $bindable([]), suggestedTags = [] } = $props<{
 		tags: string[];
@@ -17,7 +18,22 @@
 
 	function addTag(tag: string) {
 		const t = tag.trim().toLowerCase();
-		if (t && !tags.includes(t)) {
+		if (!t) return;
+
+		if (tags.length >= 20) {
+			toast.error('Maximum 20 tags allowed');
+			return;
+		}
+		if (t.length > 16) {
+			toast.error('Tag cannot exceed 16 characters');
+			return;
+		}
+		if (!/^[a-z]+$/.test(t)) {
+			toast.error('Tags can only contain alphabetic characters');
+			return;
+		}
+
+		if (!tags.includes(t)) {
 			tags = [...tags, t];
 		}
 		inputValue = '';

@@ -1,6 +1,13 @@
 # Kioku
 
-Kioku is a modern web application built with SvelteKit and tailored for deployment on Cloudflare Workers. It integrates a robust stack for styling, database management, and authentication to provide a seamless full-stack experience.
+Kioku is a modern spaced-repetition flashcard application built with SvelteKit and tailored for deployment on Cloudflare Workers. It allows users to create, manage, and share flashcard collections, and features a spaced-repetition algorithm to optimize learning. It integrates a robust stack for styling, database management, and authentication to provide a seamless full-stack experience.
+
+## Features
+
+- **User Authentication**: Secure signup and login via Better Auth.
+- **Flashcard Collections**: Create personal flashcard collections or discover public, shared collections.
+- **Spaced Repetition**: Keep track of your learning progress with a spaced-repetition algorithm that tracks intervals, ease factors, and repetitions.
+- **Markdown Support**: Rich text definitions using markdown.
 
 ## Tech Stack
 
