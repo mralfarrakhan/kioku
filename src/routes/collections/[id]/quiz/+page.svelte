@@ -139,7 +139,7 @@
 		if (['1', '2', '3', '4'].includes(key)) {
 			const idx = parseInt(key) - 1;
 			if (idx >= 0 && idx < currentCard.options.length) {
-				handleOptionClick(currentCard.options[idx]);
+				handleOptionClick(currentCard.options[idx].text);
 			}
 		}
 	}
@@ -211,24 +211,24 @@
 			</div>
 
 			<div class="flex flex-col gap-4">
-				{#each currentCard.options as option, index}
+				{#each currentCard.options as optionObj, index}
 					<button
-						onclick={() => handleOptionClick(option)}
+						onclick={() => handleOptionClick(optionObj.text)}
 						disabled={selectedOption !== null}
 						class="relative flex min-h-[100px] w-full items-center justify-center rounded-2xl border-2 p-6 text-center text-lg font-bold transition-all
 							{selectedOption === null
 							? 'border-gray-200 bg-white text-gray-700 shadow-[0_4px_0_0_rgba(229,231,235,1)] hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50 hover:shadow-[0_4px_0_0_rgba(147,197,253,1)] active:translate-y-1 active:shadow-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:shadow-[0_4px_0_0_rgba(31,41,55,1)] dark:hover:border-blue-500 dark:hover:bg-blue-900/30 dark:hover:shadow-[0_4px_0_0_rgba(59,130,246,0.5)]'
 							: ''}
-							{selectedOption === option && isCorrect
+							{selectedOption === optionObj.text && isCorrect
 							? 'border-green-500 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
 							: ''}
-							{selectedOption === option && !isCorrect
+							{selectedOption === optionObj.text && !isCorrect
 							? 'border-red-500 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
 							: ''}
-							{selectedOption !== null && selectedOption !== option && option === currentCard.correctAnswer
+							{selectedOption !== null && selectedOption !== optionObj.text && optionObj.text === currentCard.correctAnswer
 							? 'border-green-500 bg-green-50 text-green-700 ring-2 ring-green-500 ring-offset-2 dark:bg-green-900/20 dark:text-green-400 dark:ring-offset-gray-950'
 							: ''}
-							{selectedOption !== null && selectedOption !== option && option !== currentCard.correctAnswer
+							{selectedOption !== null && selectedOption !== optionObj.text && optionObj.text !== currentCard.correctAnswer
 							? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500'
 							: ''}"
 					>
@@ -238,10 +238,10 @@
 							{index + 1}
 						</div>
 						<span class="pl-12">
-							{#if currentCard.isMarkdown}
-								{@html parseMarkdown(option)}
+							{#if optionObj.isMarkdown}
+								{@html parseMarkdown(optionObj.text)}
 							{:else}
-								{option}
+								{optionObj.text}
 							{/if}
 						</span>
 					</button>

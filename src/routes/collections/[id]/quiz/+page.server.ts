@@ -155,14 +155,15 @@ export const load: PageServerLoad = async (event) => {
 			distractorCards.push(...shuffledGroup.slice(0, needed));
 		}
 
-		const distractors = distractorCards.map((o) => o.definition);
-		const options = shuffle([c.definition, ...distractors]);
+		const distractors = distractorCards.map((o) => ({ text: o.definition, isMarkdown: o.isMarkdown }));
+		const options = shuffle([{ text: c.definition, isMarkdown: c.isMarkdown }, ...distractors]);
 
 		return {
 			flashcardId: c.id,
 			term: c.term,
 			correctAnswer: c.definition,
-			options
+			options,
+			isMarkdown: c.isMarkdown
 		};
 	});
 

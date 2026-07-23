@@ -17,7 +17,7 @@
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate:prod": "wrangler d1 migrations apply kioku-db --remote",
-		"db:migrate:dev": "wrangler d1 migrations apply kioku-db",
+		"db:migrate:dev": "wrangler d1 migrations apply kioku-db --local",
 		"db:studio": "drizzle-kit studio",
 		"auth:schema": "better-auth generate --config src/lib/server/auth.ts --output src/lib/server/db/auth.schema.ts --yes",
 		"deploy": "wrangler types --check && vite build && wrangler deploy"

@@ -17,6 +17,24 @@
 	let showEditCollection = $state(false);
 	let showQuizOptions = $state(false);
 
+	let searchParams = $derived(page.url.searchParams);
+	let searchQuery = $state(page.url.searchParams.get('q') || '');
+	let filterTags = $state(page.url.searchParams.get('tags') ? page.url.searchParams.get('tags')!.split(',').map(t => t.trim()).filter(Boolean) : []);
+	let statusFilter = $state(page.url.searchParams.get('status') || '');
+	let difficultyFilter = $state(page.url.searchParams.get('difficulty') || '');
+	let sortOption = $state(page.url.searchParams.get('sort') || 'newest');
+	let searchForm: HTMLFormElement | undefined = $state();
+
+	$effect(() => {
+		searchQuery = searchParams.get('q') || '';
+		const t = searchParams.get('tags');
+		filterTags = t ? t.split(',').map(t => t.trim()).filter(Boolean) : [];
+		statusFilter = searchParams.get('status') || '';
+		difficultyFilter = searchParams.get('difficulty') || '';
+		sortOption = searchParams.get('sort') || 'newest';
+	});
+	let showFilters = $state(false);
+
 	let createCardModal: ReturnType<typeof CreateFlashcardModal> | undefined = $state();
 
 	let editCardId = $state<string | null>(null);
@@ -299,6 +317,72 @@
 		</h2>
 	</div>
 
+	<form method="get" class="mb-6" data-sveltekit-keepfocus bind:this={searchForm}>
+		<div class="flex flex-col gap-2 sm:flex-row">
+			<div class="relative w-full">
+				<input type="text" name="q" bind:value={searchQuery} placeholder="Search term or definition..." class="w-full rounded-xl border border-gray-300 bg-white py-2 pl-4 pr-10 font-medium focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100" />
+				{#if searchQuery}
+					<button type="button" onclick={() => { searchQuery = ''; searchForm?.submit(); }} class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+					</button>
+				{/if}
+			</div>
+			<div class="flex shrink-0 gap-2">
+				<button type="button" onclick={() => showFilters = !showFilters} class="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2 font-bold text-gray-700 hover:bg-gray-50 sm:flex-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">Filters</button>
+				<button type="submit" class="flex-1 rounded-xl bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-600 sm:flex-none">Search</button>
+			</div>
+		</div>
+		
+		{#if showFilters}
+		<div class="mt-4 grid grid-cols-1 gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 md:grid-cols-3 dark:border-gray-700 dark:bg-gray-900">
+			<div>
+				<label class="block text-sm font-bold text-gray-700 dark:text-gray-300">Sort By</label>
+				<select name="sort" bind:value={sortOption} class="mt-1 w-full rounded-lg border border-gray-300 bg-white p-2 font-medium dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+					<option value="newest">Newest</option>
+					<option value="oldest">Oldest</option>
+					<option value="relevance">Relevance</option>
+					<option value="a-z">A-Z</option>
+					<option value="z-a">Z-A</option>
+				</select>
+			</div>
+			<div>
+				<label class="block text-sm font-bold text-gray-700 dark:text-gray-300">Status</label>
+				<select name="status" bind:value={statusFilter} class="mt-1 w-full rounded-lg border border-gray-300 bg-white p-2 font-medium dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+					<option value="">Any</option>
+					<option value="new">New</option>
+					<option value="learning">Learning</option>
+					<option value="due">Due for Review</option>
+				</select>
+			</div>
+			<div>
+				<label class="block text-sm font-bold text-gray-700 dark:text-gray-300">Difficulty</label>
+				<select name="difficulty" bind:value={difficultyFilter} class="mt-1 w-full rounded-lg border border-gray-300 bg-white p-2 font-medium dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+					<option value="">Any</option>
+					<option value="hard">Hard</option>
+					<option value="medium">Medium</option>
+					<option value="easy">Easy</option>
+				</select>
+			</div>
+			<div class="md:col-span-3">
+				<label class="block text-sm font-bold text-gray-700 dark:text-gray-300">Tags</label>
+				<div class="mt-1" style="--tag-input-py: 0.5rem; --tag-input-px: 0.5rem;">
+					<TagInput bind:tags={filterTags} suggestedTags={uniqueTags} />
+				</div>
+				<input type="hidden" name="tags" value={filterTags.join(',')} />
+			</div>
+			<div class="col-span-1 flex justify-end md:col-span-3">
+				<button type="button" onclick={() => {
+					filterTags = [];
+					statusFilter = '';
+					difficultyFilter = '';
+					sortOption = 'newest';
+					setTimeout(() => searchForm?.submit(), 0);
+				}} class="rounded-lg bg-gray-200 px-4 py-2 font-bold text-gray-700 transition hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Clear Filters</button>
+			</div>
+		</div>
+		{/if}
+	</form>
+
 	{#if data.flashcards.length === 0}
 		<div
 			class="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 py-12 text-center dark:border-gray-700 dark:bg-gray-900"
@@ -308,6 +392,9 @@
 	{:else}
 		<div class="flex flex-col gap-4">
 			{#each data.flashcards as card (card.id)}
+				{@const isNew = card.repetitions === 0 || card.repetitions === null || card.repetitions === undefined}
+				{@const isDue = card.nextReviewAt && card.nextReviewAt.getTime() <= Date.now()}
+				{@const srsStatus = isNew ? 'New' : isDue ? 'Due' : (card.interval && card.interval < 21) ? 'Learning' : 'Review'}
 				<div
 					class="rounded-2xl border-2 border-gray-100 bg-white p-5 shadow-sm transition hover:border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700"
 				>
@@ -426,58 +513,63 @@
 						</div>
 
 						<div
-							class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-800"
+							class="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4 dark:border-gray-800"
 						>
-							<div class="flex items-center gap-3" title="Card Level">
-								<div class="relative flex h-10 w-10 items-center justify-center">
-									<svg
-										class="absolute inset-0 h-full w-full -rotate-90 transform"
-										viewBox="0 0 36 36"
-									>
-										<circle
-											cx="18"
-											cy="18"
-											r="15"
-											fill="none"
-											class="stroke-gray-100 dark:stroke-gray-800"
-											stroke-width="4"
-										></circle>
-										{#if card.fluencyScore !== null && card.fluencyScore !== undefined}
-											{@const progress = card.fluencyScore % 100}
-											{@const level = Math.floor(card.fluencyScore / 100)}
+							<div class="flex items-center gap-4">
+								<div class="flex items-center gap-3" title="Card Level">
+									<div class="relative flex h-10 w-10 items-center justify-center">
+										<svg
+											class="absolute inset-0 h-full w-full -rotate-90 transform"
+											viewBox="0 0 36 36"
+										>
 											<circle
 												cx="18"
 												cy="18"
 												r="15"
 												fill="none"
-												class={level >= 3
-													? 'stroke-green-500'
-													: level >= 1
-														? 'stroke-blue-500'
-														: 'stroke-yellow-400'}
+												class="stroke-gray-100 dark:stroke-gray-800"
 												stroke-width="4"
-												stroke-dasharray="94.2"
-												stroke-dashoffset={94.2 - (progress / 100) * 94.2}
-												stroke-linecap="round"
-												style="transition: stroke-dashoffset 1s ease-in-out;"
 											></circle>
-										{/if}
-									</svg>
+											{#if card.fluencyScore !== null && card.fluencyScore !== undefined}
+												{@const progress = card.fluencyScore % 100}
+												{@const level = Math.floor(card.fluencyScore / 100)}
+												<circle
+													cx="18"
+													cy="18"
+													r="15"
+													fill="none"
+													class={level >= 3
+														? 'stroke-green-500'
+														: level >= 1
+															? 'stroke-blue-500'
+															: 'stroke-yellow-400'}
+													stroke-width="4"
+													stroke-dasharray="94.2"
+													stroke-dashoffset={94.2 - (progress / 100) * 94.2}
+													stroke-linecap="round"
+													style="transition: stroke-dashoffset 1s ease-in-out;"
+												></circle>
+											{/if}
+										</svg>
+										<span
+											class="relative text-[10px] font-bold {card.fluencyScore !== null &&
+											card.fluencyScore !== undefined
+												? 'text-gray-700 dark:text-gray-300'
+												: 'text-gray-400 dark:text-gray-500'}"
+										>
+											Lv.{Math.floor((card.fluencyScore || 0) / 100)}
+										</span>
+									</div>
 									<span
-										class="relative text-[10px] font-bold {card.fluencyScore !== null &&
+										class="text-sm font-bold {card.fluencyScore !== null &&
 										card.fluencyScore !== undefined
-											? 'text-gray-700 dark:text-gray-300'
-											: 'text-gray-400 dark:text-gray-500'}"
+											? 'text-gray-600 dark:text-gray-400'
+											: 'text-gray-400 dark:text-gray-500'}">Level</span
 									>
-										Lv.{Math.floor((card.fluencyScore || 0) / 100)}
-									</span>
 								</div>
-								<span
-									class="text-sm font-bold {card.fluencyScore !== null &&
-									card.fluencyScore !== undefined
-										? 'text-gray-600 dark:text-gray-400'
-										: 'text-gray-400 dark:text-gray-500'}">Level</span
-								>
+								<span class="rounded-full px-3 py-1 text-xs font-extrabold uppercase tracking-wider {isNew ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' : isDue ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'}">
+									{srsStatus}
+								</span>
 							</div>
 
 							<div class="flex items-center gap-2">

@@ -47,6 +47,15 @@ export const flashcard = sqliteTable('flashcard', {
 		.notNull()
 });
 
+export const flashcardFts = sqliteTable('flashcard_fts', {
+	rowid: integer('rowid').primaryKey(),
+	id: text('id').notNull(),
+	term: text('term'),
+	definition: text('definition'),
+	tags: text('tags'),
+	rank: real('rank')
+});
+
 export const userFlashcardProgress = sqliteTable('user_flashcard_progress', {
 	id: text('id')
 		.primaryKey()

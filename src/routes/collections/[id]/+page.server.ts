@@ -1,8 +1,8 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
-import { collection, flashcard, userFlashcardProgress } from '$lib/server/db/schema';
-import { eq, and, desc, count } from 'drizzle-orm';
+import { collection, flashcard, userFlashcardProgress, flashcardFts } from '$lib/server/db/schema';
+import { eq, and, desc, count, asc, sql, or } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -25,19 +25,47 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(302, '/');
 	}
 
-	// Pagination parameters
+	// Search & Pagination parameters
 	const page = parseInt(event.url.searchParams.get('page') || '1') || 1;
 	const pageSize = 20;
+	const q = event.url.searchParams.get('q')?.trim();
+	const tagsParam = event.url.searchParams.get('tags');
+	const sort = event.url.searchParams.get('sort') || 'newest';
+	const status = event.url.searchParams.get('status');
+	const difficulty = event.url.searchParams.get('difficulty');
 
-	// Total count for pagination
-	const countResult = await db
-		.select({ value: count() })
-		.from(flashcard)
-		.where(eq(flashcard.collectionId, id));
-	const totalItems = countResult[0].value;
-	const totalPages = Math.ceil(totalItems / pageSize);
+	const conditions = [eq(flashcard.collectionId, id)];
 
-	const flashcards = await db
+	if (tagsParam) {
+		const tagsList = tagsParam.split(',').map((t) => t.trim()).filter(Boolean);
+		if (tagsList.length > 0) {
+			const tagConditions = tagsList.map(tag => sql`EXISTS (SELECT 1 FROM json_each(${flashcard.tags}) WHERE value = ${tag})`);
+			conditions.push(and(...tagConditions)!);
+		}
+	}
+
+	if (status) {
+		const now = Date.now();
+		if (status === 'new') {
+			conditions.push(or(eq(userFlashcardProgress.repetitions, 0), sql`${userFlashcardProgress.id} IS NULL`)!);
+		} else if (status === 'learning') {
+			conditions.push(and(sql`${userFlashcardProgress.id} IS NOT NULL`, sql`${userFlashcardProgress.repetitions} > 0`, sql`${userFlashcardProgress.interval} < 21`)!);
+		} else if (status === 'due') {
+			conditions.push(and(sql`${userFlashcardProgress.id} IS NOT NULL`, sql`${userFlashcardProgress.nextReviewAt} <= ${now}`)!);
+		}
+	}
+
+	if (difficulty) {
+		if (difficulty === 'hard') {
+			conditions.push(sql`${userFlashcardProgress.easeFactor} < 2.0`);
+		} else if (difficulty === 'medium') {
+			conditions.push(and(sql`${userFlashcardProgress.easeFactor} >= 2.0`, sql`${userFlashcardProgress.easeFactor} <= 2.5`)!);
+		} else if (difficulty === 'easy') {
+			conditions.push(sql`${userFlashcardProgress.easeFactor} > 2.5`);
+		}
+	}
+
+	let baseQuery = db
 		.select({
 			id: flashcard.id,
 			term: flashcard.term,
@@ -47,7 +75,11 @@ export const load: PageServerLoad = async (event) => {
 			collectionId: flashcard.collectionId,
 			createdAt: flashcard.createdAt,
 			updatedAt: flashcard.updatedAt,
-			fluencyScore: userFlashcardProgress.fluencyScore
+			fluencyScore: userFlashcardProgress.fluencyScore,
+			easeFactor: userFlashcardProgress.easeFactor,
+			nextReviewAt: userFlashcardProgress.nextReviewAt,
+			interval: userFlashcardProgress.interval,
+			repetitions: userFlashcardProgress.repetitions
 		})
 		.from(flashcard)
 		.leftJoin(
@@ -56,9 +88,56 @@ export const load: PageServerLoad = async (event) => {
 				eq(flashcard.id, userFlashcardProgress.flashcardId),
 				eq(userFlashcardProgress.userId, event.locals.user.id)
 			)
-		)
-		.where(eq(flashcard.collectionId, id))
-		.orderBy(desc(flashcard.createdAt))
+		);
+
+	let countQuery = db
+		.select({ value: count() })
+		.from(flashcard)
+		.leftJoin(
+			userFlashcardProgress,
+			and(
+				eq(flashcard.id, userFlashcardProgress.flashcardId),
+				eq(userFlashcardProgress.userId, event.locals.user.id)
+			)
+		);
+
+	if (q) {
+		const ftsQuery = q.replace(/"/g, '""');
+		// FTS5 MATCH operator format for trigram/unicode61
+		// By wrapping with quotes it escapes some keywords, but FTS5 query syntax is strict.
+		// A simple query parameterization string:
+		const matchQuery = `"${ftsQuery}"*`; 
+		
+		baseQuery = baseQuery.innerJoin(
+			flashcardFts,
+			and(
+				eq(flashcard.id, flashcardFts.id),
+				sql`flashcard_fts MATCH ${matchQuery}`
+			)
+		) as any;
+		
+		countQuery = countQuery.innerJoin(
+			flashcardFts,
+			and(
+				eq(flashcard.id, flashcardFts.id),
+				sql`flashcard_fts MATCH ${matchQuery}`
+			)
+		) as any;
+	}
+
+	let orderClause = desc(flashcard.createdAt);
+	if (sort === 'oldest') orderClause = asc(flashcard.createdAt);
+	else if (sort === 'a-z') orderClause = asc(flashcard.term);
+	else if (sort === 'z-a') orderClause = desc(flashcard.term);
+	else if (sort === 'relevance' && q) orderClause = asc(sql`rank`);
+
+	const countResult = await countQuery.where(and(...conditions));
+	const totalItems = countResult[0].value;
+	const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
+	const flashcards = await baseQuery
+		.where(and(...conditions))
+		.orderBy(orderClause)
 		.limit(pageSize)
 		.offset((page - 1) * pageSize);
 
@@ -237,6 +316,22 @@ export const actions: Actions = {
 			.from(collection)
 			.where(and(eq(collection.id, collectionId), eq(collection.userId, user.id)));
 		if (cols.length === 0) return fail(403, { message: 'Forbidden' });
+
+		// Check for duplicate terms (excluding the current card being edited)
+		const existingCards = await db
+			.select({ id: flashcard.id, term: flashcard.term })
+			.from(flashcard)
+			.where(eq(flashcard.collectionId, collectionId));
+
+		const isDuplicate = existingCards.some(
+			(card) => card.id !== flashcardId && card.term.trim().toLowerCase() === term.trim().toLowerCase()
+		);
+
+		if (isDuplicate) {
+			return fail(400, {
+				message: 'A flashcard with this term already exists in this collection.'
+			});
+		}
 
 		try {
 			await db
