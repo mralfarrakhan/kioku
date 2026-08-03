@@ -33,8 +33,15 @@ export const load: PageServerLoad = async (event) => {
 	const sort = event.url.searchParams.get('sort') || 'newest';
 	const status = event.url.searchParams.get('status');
 	const difficulty = event.url.searchParams.get('difficulty');
+	const itemType = event.url.searchParams.get('itemType') || 'all';
+	
+	const conditions = [
+		eq(flashcard.collectionId, id)
+	];
 
-	const conditions = [eq(flashcard.collectionId, id)];
+	if (itemType === 'flashcard' || itemType === 'note') {
+		conditions.push(eq(flashcard.type, itemType));
+	}
 
 	if (tagsParam) {
 		const tagsList = tagsParam.split(',').map((t) => t.trim()).filter(Boolean);
@@ -70,7 +77,7 @@ export const load: PageServerLoad = async (event) => {
 			id: flashcard.id,
 			term: flashcard.term,
 			definition: flashcard.definition,
-			isMarkdown: flashcard.isMarkdown,
+			type: flashcard.type,
 			tags: flashcard.tags,
 			collectionId: flashcard.collectionId,
 			createdAt: flashcard.createdAt,
@@ -141,6 +148,42 @@ export const load: PageServerLoad = async (event) => {
 		.limit(pageSize)
 		.offset((page - 1) * pageSize);
 
+	// Fetch type counts based on current filters (excluding the itemType filter itself, or including it?
+	// If we include it, then filtering by "Flashcards" will show 0 Notes. It's usually better to show counts of what's available *with the other filters*.
+	const countConditions = [...conditions];
+	if (itemType === 'flashcard' || itemType === 'note') {
+		countConditions.pop(); // Remove the type filter so we can see counts for both types
+	}
+
+	let typeCountsQueryBase = db
+		.select({ type: flashcard.type, value: count() })
+		.from(flashcard)
+		.leftJoin(
+			userFlashcardProgress,
+			and(
+				eq(flashcard.id, userFlashcardProgress.flashcardId),
+				eq(userFlashcardProgress.userId, event.locals.user.id)
+			)
+		);
+
+	if (q) {
+		const ftsQuery = q.replace(/"/g, '""');
+		const matchQuery = `"${ftsQuery}"*`; 
+		typeCountsQueryBase = typeCountsQueryBase.innerJoin(
+			flashcardFts,
+			and(
+				eq(flashcard.id, flashcardFts.id),
+				sql`flashcard_fts MATCH ${matchQuery}`
+			)
+		) as any;
+	}
+
+	const typeCountsResult = await typeCountsQueryBase.where(and(...countConditions)).groupBy(flashcard.type);
+	const typeCounts = {
+		flashcard: typeCountsResult.find(r => r.type === 'flashcard')?.value || 0,
+		note: typeCountsResult.find(r => r.type === 'note')?.value || 0
+	};
+
 	const d1 = event.platform?.env?.DB as D1Database | undefined;
 	let allUniqueTags: string[] = [];
 
@@ -166,6 +209,7 @@ export const load: PageServerLoad = async (event) => {
 		collection: coll,
 		flashcards,
 		allUniqueTags,
+		typeCounts,
 		pagination: {
 			page,
 			totalPages,
@@ -208,7 +252,7 @@ export const actions: Actions = {
 		const formData = await event.request.formData();
 		const term = formData.get('term')?.toString();
 		const definition = formData.get('definition')?.toString();
-		const isMarkdown = formData.get('isMarkdown')?.toString() === 'on';
+		const type = formData.get('type')?.toString() === 'note' ? 'note' : 'flashcard';
 		
 		let tags: string[] = [];
 		try {
@@ -265,7 +309,7 @@ export const actions: Actions = {
 				collectionId: id,
 				term: term.trim(),
 				definition: definition.trim(),
-				isMarkdown,
+				type,
 				tags
 			});
 			return { success: true };
@@ -283,7 +327,7 @@ export const actions: Actions = {
 		const flashcardId = formData.get('id')?.toString();
 		const term = formData.get('term')?.toString();
 		const definition = formData.get('definition')?.toString();
-		const isMarkdown = formData.get('isMarkdown')?.toString() === 'on';
+		const type = formData.get('type')?.toString() === 'note' ? 'note' : 'flashcard';
 
 		let tags: string[] = [];
 		try {
@@ -336,7 +380,7 @@ export const actions: Actions = {
 		try {
 			await db
 				.update(flashcard)
-				.set({ term, definition, isMarkdown, tags })
+				.set({ term, definition, type, tags })
 				.where(and(eq(flashcard.id, flashcardId), eq(flashcard.collectionId, collectionId)));
 			return { success: true };
 		} catch (e) {

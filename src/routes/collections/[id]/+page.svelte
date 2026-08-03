@@ -3,7 +3,7 @@
 	import type { PageServerData } from './$types';
 	import { page } from '$app/state';
 	import Pagination from '$lib/components/Pagination.svelte';
-	import { parseMarkdown } from '$lib/markdown';
+	import { parseMarkdown, parseInlineMarkdown } from '$lib/markdown';
 	import CreateFlashcardModal from '$lib/components/CreateFlashcardModal.svelte';
 	import TagInput from '$lib/components/TagInput.svelte';
 	import Tag from '$lib/components/Tag.svelte';
@@ -22,6 +22,7 @@
 	let filterTags = $state(page.url.searchParams.get('tags') ? page.url.searchParams.get('tags')!.split(',').map(t => t.trim()).filter(Boolean) : []);
 	let statusFilter = $state(page.url.searchParams.get('status') || '');
 	let difficultyFilter = $state(page.url.searchParams.get('difficulty') || '');
+	let itemType = $state(page.url.searchParams.get('itemType') || 'all');
 	let sortOption = $state(page.url.searchParams.get('sort') || 'newest');
 	let searchForm: HTMLFormElement | undefined = $state();
 
@@ -31,6 +32,7 @@
 		filterTags = t ? t.split(',').map(t => t.trim()).filter(Boolean) : [];
 		statusFilter = searchParams.get('status') || '';
 		difficultyFilter = searchParams.get('difficulty') || '';
+		itemType = searchParams.get('itemType') || 'all';
 		sortOption = searchParams.get('sort') || 'newest';
 	});
 	let showFilters = $state(false);
@@ -40,18 +42,18 @@
 	let editCardId = $state<string | null>(null);
 	let editCardTerm = $state('');
 	let editCardDef = $state('');
-	let editCardMarkdown = $state(false);
+	let editCardType = $state('flashcard');
 	let editCardTags = $state<string[]>([]);
 
 	let confirmDeleteModal: ReturnType<typeof ConfirmModal> | undefined = $state();
 	let deleteCardId = $state<string | null>(null);
 	let deleteFormElement: HTMLFormElement | undefined = $state();
 
-	function startEditCard(id: string, term: string, def: string, isMarkdown: boolean, tags: string[] | null) {
+	function startEditCard(id: string, term: string, def: string, type: string, tags: string[] | null) {
 		editCardId = id;
 		editCardTerm = term;
 		editCardDef = def;
-		editCardMarkdown = isMarkdown;
+		editCardType = type;
 		editCardTags = tags || [];
 	}
 </script>
@@ -106,12 +108,18 @@
 				}}
 				disabled={!isOwner}
 				title={!isOwner ? 'Only the owner can add cards' : ''}
-				class="rounded-xl px-4 py-2 font-bold text-white shadow-sm transition {isOwner
-					? 'bg-blue-500 hover:bg-blue-600 hover:shadow'
-					: 'cursor-not-allowed bg-blue-300 opacity-60 dark:bg-blue-800'}"
+				class="rounded-xl px-4 py-2 font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition shadow-sm dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
 			>
-				+ Add Card
+				+ Add Flashcard
 			</button>
+			{#if isOwner}
+			<a
+				href="/collections/{data.collection.id}/notes/new"
+				class="inline-block rounded-xl px-4 py-2 font-bold text-white shadow-sm transition bg-blue-500 hover:bg-blue-600 hover:shadow"
+			>
+				+ Add Note
+			</a>
+			{/if}
 		</div>
 	</div>
 </div>
@@ -183,7 +191,7 @@
 {/if}
 
 {#if isOwner}
-	<CreateFlashcardModal bind:this={createCardModal} suggestedTags={uniqueTags} />
+	<CreateFlashcardModal bind:this={createCardModal} suggestedTags={uniqueTags} type="flashcard" />
 	
 	<ConfirmModal
 		bind:this={confirmDeleteModal}
@@ -307,14 +315,22 @@
 </div>
 
 <div class="mt-8">
-	<div
-		class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-800"
-	>
-		<h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">
-			Flashcards <span class="text-sm text-gray-400 dark:text-gray-500"
-				>({data.pagination.totalItems})</span
-			>
-		</h2>
+	<div class="mb-4 flex flex-col gap-2 border-b border-gray-200 pb-4 dark:border-gray-800 md:flex-row md:items-center md:justify-between">
+		<div class="flex items-center gap-2">
+			<h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">All Items</h2>
+			<span class="text-sm font-bold text-gray-400 dark:text-gray-500">
+				({data.pagination.totalItems})
+			</span>
+			<span class="text-gray-300 dark:text-gray-600">—</span>
+			<span class="text-sm font-bold text-gray-500 dark:text-gray-400">
+				{data.typeCounts.flashcard} Flashcard{data.typeCounts.flashcard === 1 ? '' : 's'} • {data.typeCounts.note} Note{data.typeCounts.note === 1 ? '' : 's'}
+			</span>
+		</div>
+		<div class="flex items-center gap-1 rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+			<button type="button" onclick={() => { itemType = 'all'; setTimeout(() => searchForm?.submit(), 0); }} class="rounded-lg px-4 py-1.5 text-sm font-bold transition-all {itemType === 'all' ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">All</button>
+			<button type="button" onclick={() => { itemType = 'flashcard'; setTimeout(() => searchForm?.submit(), 0); }} class="rounded-lg px-4 py-1.5 text-sm font-bold transition-all {itemType === 'flashcard' ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">Flashcards</button>
+			<button type="button" onclick={() => { itemType = 'note'; setTimeout(() => searchForm?.submit(), 0); }} class="rounded-lg px-4 py-1.5 text-sm font-bold transition-all {itemType === 'note' ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}">Notes</button>
+		</div>
 	</div>
 
 	<form method="get" class="mb-6" data-sveltekit-keepfocus bind:this={searchForm}>
@@ -322,10 +338,11 @@
 			<div class="relative w-full">
 				<input type="text" name="q" bind:value={searchQuery} placeholder="Search term or definition..." class="w-full rounded-xl border border-gray-300 bg-white py-2 pl-4 pr-10 font-medium focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100" />
 				{#if searchQuery}
-					<button type="button" onclick={() => { searchQuery = ''; searchForm?.submit(); }} class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+					<button type="button" onclick={() => { searchQuery = ''; setTimeout(() => searchForm?.submit(), 0); }} class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
 					</button>
 				{/if}
+				<input type="hidden" name="itemType" value={itemType} />
 			</div>
 			<div class="flex shrink-0 gap-2">
 				<button type="button" onclick={() => showFilters = !showFilters} class="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2 font-bold text-gray-700 hover:bg-gray-50 sm:flex-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300">Filters</button>
@@ -376,6 +393,7 @@
 					statusFilter = '';
 					difficultyFilter = '';
 					sortOption = 'newest';
+					itemType = 'all';
 					setTimeout(() => searchForm?.submit(), 0);
 				}} class="rounded-lg bg-gray-200 px-4 py-2 font-bold text-gray-700 transition hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">Clear Filters</button>
 			</div>
@@ -392,6 +410,28 @@
 	{:else}
 		<div class="flex flex-col gap-4">
 			{#each data.flashcards as card (card.id)}
+				{#if card.type === 'note'}
+					<a href="/collections/{data.collection.id}/notes/{card.id}" class="block rounded-2xl border-2 border-gray-100 bg-white p-5 shadow-sm transition hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700">
+						<div class="flex items-center gap-4">
+							<div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400">
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+							</div>
+							<div class="flex-1">
+								<h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">{@html parseInlineMarkdown(card.term)}</h3>
+								{#if card.tags && card.tags.length > 0}
+									<div class="mt-2 flex flex-wrap gap-1.5">
+										{#each card.tags as tag}
+											<Tag name={tag} />
+										{/each}
+									</div>
+								{/if}
+							</div>
+							<div class="text-gray-400">
+								<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+							</div>
+						</div>
+					</a>
+				{:else}
 				{@const isNew = card.repetitions === 0 || card.repetitions === null || card.repetitions === undefined}
 				{@const isDue = card.nextReviewAt && card.nextReviewAt.getTime() <= Date.now()}
 				{@const srsStatus = isNew ? 'New' : isDue ? 'Due' : (card.interval && card.interval < 21) ? 'Learning' : 'Review'}
@@ -410,6 +450,7 @@
 							}}
 						>
 							<input type="hidden" name="id" value={card.id} />
+							<input type="hidden" name="type" value={editCardType} />
 							<div class="grid gap-4 md:grid-cols-2">
 								<textarea
 									name="term"
@@ -429,43 +470,6 @@
 								<TagInput bind:tags={editCardTags} suggestedTags={uniqueTags} />
 								<input type="hidden" name="tags" value={JSON.stringify(editCardTags)} />
 							</div>
-
-							<div class="mt-4 flex items-center">
-								<input
-									type="checkbox"
-									name="isMarkdown"
-									id="isMarkdownEdit"
-									bind:checked={editCardMarkdown}
-									class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-								/>
-								<label
-									for="isMarkdownEdit"
-									class="ml-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
-									>Advanced Formatting (Markdown)</label
-								>
-							</div>
-
-							{#if editCardMarkdown}
-								<div
-									class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
-								>
-									<p class="mb-2 text-xs font-bold text-gray-500 uppercase">Live Preview</p>
-									<div class="text-center">
-										<div class="border-b border-gray-200 pb-3 dark:border-gray-700">
-											<div
-												class="text-xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100"
-											>
-												{@html parseMarkdown(editCardTerm)}
-											</div>
-										</div>
-										<div class="pt-3">
-											<div class="text-lg whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-												{@html parseMarkdown(editCardDef)}
-											</div>
-										</div>
-									</div>
-								</div>
-							{/if}
 
 							<div class="mt-3 flex justify-end gap-2">
 								<button
@@ -491,23 +495,13 @@
 								</div>
 							{/if}
 							<div class="border-b border-gray-100 pb-4 dark:border-gray-800">
-								<div
-									class="text-3xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100"
-								>
-									{#if card.isMarkdown}
-										{@html parseMarkdown(card.term)}
-									{:else}
-										{card.term}
-									{/if}
+								<div class="text-3xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+									{@html parseInlineMarkdown(card.term)}
 								</div>
 							</div>
 							<div>
 								<div class="text-xl whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-									{#if card.isMarkdown}
-										{@html parseMarkdown(card.definition)}
-									{:else}
-										{card.definition}
-									{/if}
+									{card.definition}
 								</div>
 							</div>
 						</div>
@@ -575,7 +569,7 @@
 							<div class="flex items-center gap-2">
 								<button
 									onclick={() =>
-										isOwner && startEditCard(card.id, card.term, card.definition, card.isMarkdown, card.tags)}
+										isOwner && startEditCard(card.id, card.term, card.definition, card.type, card.tags)}
 									disabled={!isOwner}
 									class="rounded-lg px-4 py-2 text-sm font-bold transition {isOwner
 										? 'text-gray-500 hover:bg-gray-100 hover:text-blue-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-blue-400'
@@ -598,6 +592,7 @@
 						</div>
 					{/if}
 				</div>
+				{/if}
 			{/each}
 		</div>
 		<Pagination currentPage={data.pagination.page} totalPages={data.pagination.totalPages} />

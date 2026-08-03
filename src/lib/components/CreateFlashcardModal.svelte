@@ -4,14 +4,13 @@
 	import { toast } from '$lib/stores/toast.svelte';
 	import TagInput from './TagInput.svelte';
 
-	let { suggestedTags = [] } = $props<{ suggestedTags?: string[] }>();
+	let { suggestedTags = [], type = 'flashcard' } = $props<{ suggestedTags?: string[], type?: 'flashcard' | 'note' }>();
 
 	let createCardDialog: HTMLDialogElement | undefined = $state();
 	let createCardError = $state<string | null>(null);
 	let termInputEl: HTMLTextAreaElement | undefined = $state();
 	let newCardTerm = $state('');
 	let newCardDef = $state('');
-	let newCardMarkdown = $state(false);
 	let newCardTags = $state<string[]>([]);
 
 	export function showModal() {
@@ -29,7 +28,7 @@
 	class="m-auto w-full max-w-2xl rounded-2xl border-0 bg-white p-6 shadow-2xl backdrop:bg-gray-900/50 backdrop:backdrop-blur-sm dark:border dark:border-gray-800 dark:bg-gray-900"
 >
 	<div class="mb-4 flex items-center justify-between">
-		<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">Add New Flashcard</h2>
+		<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">Add New {type === 'note' ? 'Note' : 'Flashcard'}</h2>
 		<button
 			type="button"
 			onclick={closeModal}
@@ -71,7 +70,6 @@
 					formElement.reset();
 					newCardTerm = '';
 					newCardDef = '';
-					newCardMarkdown = false;
 					newCardTags = [];
 					closeModal();
 					toast.success('Flashcard added successfully!');
@@ -79,10 +77,11 @@
 			};
 		}}
 	>
+		<input type="hidden" name="type" value={type} />
 		<div class="grid gap-4 md:grid-cols-2">
 			<div>
 				<label for="term" class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
-					>Term / Question</label
+					>{type === 'note' ? 'Title' : 'Term / Question'}</label
 				>
 				<textarea
 					id="term"
@@ -97,7 +96,7 @@
 			</div>
 			<div>
 				<label for="definition" class="block text-sm font-semibold text-gray-700 dark:text-gray-300"
-					>Definition / Answer</label
+					>{type === 'note' ? 'Content' : 'Definition / Answer'}</label
 				>
 				<textarea
 					id="definition"
@@ -117,51 +116,6 @@
 			<input type="hidden" name="tags" value={JSON.stringify(newCardTags)} />
 		</div>
 
-		<div class="mt-4 flex items-center">
-			<input
-				type="checkbox"
-				name="isMarkdown"
-				id="isMarkdownAdd"
-				bind:checked={newCardMarkdown}
-				class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-			/>
-			<label
-				for="isMarkdownAdd"
-				class="ml-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
-				>Advanced Formatting (Markdown)</label
-			>
-		</div>
-
-		{#if newCardMarkdown}
-			<div
-				class="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50"
-			>
-				<p class="mb-2 text-xs font-bold text-gray-500 uppercase">Live Preview</p>
-				<div class="text-center">
-					<div class="border-b border-gray-200 pb-3 dark:border-gray-700">
-						<div
-							class="text-xl font-extrabold whitespace-pre-wrap text-gray-900 dark:text-gray-100"
-						>
-							{#if newCardTerm}
-								{@html parseMarkdown(newCardTerm)}
-							{:else}
-								<span class="text-gray-400">Term...</span>
-							{/if}
-						</div>
-					</div>
-					<div class="pt-3">
-						<div class="text-lg whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-							{#if newCardDef}
-								{@html parseMarkdown(newCardDef)}
-							{:else}
-								<span class="text-gray-400">Definition...</span>
-							{/if}
-						</div>
-					</div>
-				</div>
-			</div>
-		{/if}
-
 		<div class="mt-6 flex justify-end gap-3">
 			<button
 				type="button"
@@ -172,7 +126,7 @@
 			<button
 				type="submit"
 				class="rounded-xl bg-blue-600 px-6 py-2 font-bold text-white transition hover:bg-blue-700"
-				>Add Card</button
+				>Add {type === 'note' ? 'Note' : 'Card'}</button
 			>
 		</div>
 	</form>

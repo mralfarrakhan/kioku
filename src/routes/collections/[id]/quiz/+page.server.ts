@@ -33,10 +33,13 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(302, '/');
 	}
 
-	// Get all flashcards
-	const allCards = await db.select().from(flashcard).where(eq(flashcard.collectionId, id));
+	// Get all items
+	const allItems = await db.select().from(flashcard).where(eq(flashcard.collectionId, id));
+	const allCards = allItems.filter((i) => i.type === 'flashcard');
+	const allNotes = allItems.filter((i) => i.type === 'note');
+
 	if (allCards.length < 4) {
-		// Can't play quiz if < 4 cards
+		// Can't play quiz if < 4 flashcards
 		return redirect(302, `/collections/${id}`);
 	}
 
@@ -155,21 +158,22 @@ export const load: PageServerLoad = async (event) => {
 			distractorCards.push(...shuffledGroup.slice(0, needed));
 		}
 
-		const distractors = distractorCards.map((o) => ({ text: o.definition, isMarkdown: o.isMarkdown }));
-		const options = shuffle([{ text: c.definition, isMarkdown: c.isMarkdown }, ...distractors]);
+		const distractors = distractorCards.map((o) => ({ text: o.definition }));
+		const options = shuffle([{ text: c.definition }, ...distractors]);
 
 		return {
 			flashcardId: c.id,
 			term: c.term,
 			correctAnswer: c.definition,
 			options,
-			isMarkdown: c.isMarkdown
+			type: c.type
 		};
 	});
 
 	return {
 		collection: coll,
-		quiz: quizSession
+		quiz: quizSession,
+		notes: allNotes.map(n => ({ id: n.id, term: n.term, definition: n.definition, type: n.type }))
 	};
 };
 

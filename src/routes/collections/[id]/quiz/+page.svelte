@@ -2,7 +2,7 @@
 	import { deserialize } from '$app/forms';
 	import type { PageServerData } from './$types';
 	import { onMount } from 'svelte';
-	import { parseMarkdown } from '$lib/markdown';
+	import { parseMarkdown, parseInlineMarkdown } from '$lib/markdown';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import { goto } from '$app/navigation';
 
@@ -124,6 +124,17 @@
 				currentIndex = 0;
 			}
 
+			if (currentIndex < quizCards.length && !isRetryPhase && data.notes && data.notes.length > 0 && Math.random() < 0.1) {
+				const randomNote = data.notes[Math.floor(Math.random() * data.notes.length)];
+				quizCards.splice(currentIndex, 0, {
+					flashcardId: randomNote.id,
+					term: randomNote.term,
+					correctAnswer: randomNote.definition,
+					options: [],
+					type: 'note'
+				});
+			}
+
 			selectedOption = null;
 			isCorrect = null;
 			oldScore = null;
@@ -198,17 +209,37 @@
 
 	<div class="flex flex-1 flex-col justify-center">
 		{#if !isFinished}
-			<div class="mb-10 text-center">
-				<h2
-					class="text-4xl font-extrabold whitespace-pre-wrap text-gray-900 md:text-5xl dark:text-gray-100"
+			{#if currentCard.type === 'note'}
+				<div class="mb-10 text-center border-b-2 border-gray-100 pb-6 dark:border-gray-800">
+					<h2 class="text-4xl font-extrabold whitespace-pre-wrap text-gray-900 md:text-5xl dark:text-gray-100 mb-6">
+						{@html parseInlineMarkdown(currentCard.term)}
+					</h2>
+					<div class="prose dark:prose-invert max-w-none text-left mx-auto">
+						{@html parseMarkdown(currentCard.correctAnswer)}
+					</div>
+				</div>
+				<button
+					onclick={() => {
+						currentIndex++;
+						if (currentIndex >= quizCards.length && incorrectQueue.length > 0) {
+							isRetryPhase = true;
+							quizCards = [...incorrectQueue];
+							incorrectQueue = [];
+							currentIndex = 0;
+						}
+					}}
+					class="w-full mt-8 rounded-2xl bg-blue-500 py-4 text-center text-xl font-extrabold text-white shadow-[0_4px_0_0_rgba(37,99,235,1)] transition hover:-translate-y-1 hover:shadow-[0_6px_0_0_rgba(37,99,235,1)] active:translate-y-1 active:shadow-none"
 				>
-					{#if currentCard.isMarkdown}
-						{@html parseMarkdown(currentCard.term)}
-					{:else}
-						{currentCard.term}
-					{/if}
-				</h2>
-			</div>
+					Continue
+				</button>
+			{:else}
+				<div class="mb-10 text-center">
+					<div
+						class="text-4xl font-extrabold whitespace-pre-wrap text-gray-900 md:text-5xl dark:text-gray-100"
+					>
+						{@html parseInlineMarkdown(currentCard.term)}
+					</div>
+				</div>
 
 			<div class="flex flex-col gap-4">
 				{#each currentCard.options as optionObj, index}
@@ -238,11 +269,7 @@
 							{index + 1}
 						</div>
 						<span class="pl-12">
-							{#if optionObj.isMarkdown}
-								{@html parseMarkdown(optionObj.text)}
-							{:else}
-								{optionObj.text}
-							{/if}
+							{optionObj.text}
 						</span>
 					</button>
 				{/each}
@@ -285,11 +312,7 @@
 									><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg
 								>
 								Correct answer:
-								{#if currentCard.isMarkdown}
-									{@html parseMarkdown(currentCard.correctAnswer)}
-								{:else}
-									{currentCard.correctAnswer}
-								{/if}
+								{currentCard.correctAnswer}
 							{/if}
 						</div>
 
@@ -345,6 +368,7 @@
 					</div>
 				{/if}
 			</div>
+			{/if}
 		{:else}
 			<div class="animate-fade-in flex h-full flex-col items-center justify-center text-center">
 				<div class="mb-6 rounded-full bg-green-100 p-6 dark:bg-green-900/30">

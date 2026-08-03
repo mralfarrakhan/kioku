@@ -34,7 +34,7 @@ const colorExtension: TokenizerAndRendererExtension = {
 			safeColor = stringToColor(seed, 80, 50);
 		}
 
-		return `<span style="color: ${safeColor};">${this.parser.parseInline(token.tokens)}</span>`;
+		return `<span style="color: ${safeColor}; vertical-align: baseline; line-height: inherit;">${this.parser.parseInline(token.tokens)}</span>`;
 	}
 };
 
@@ -51,7 +51,23 @@ export function parseMarkdown(text: string | null | undefined): string {
 		.replace(/"/g, '&quot;')
 		.replace(/'/g, '&#039;');
 
-	const rawHtml = marked.parseInline(escapedText, { async: false, breaks: true }) as string;
+	const rawHtml = marked.parse(escapedText, { async: false, breaks: true }) as string;
+
+	return rawHtml;
+}
+
+export function parseInlineMarkdown(text: string | null | undefined): string {
+	if (!text) return '';
+
+	// Escape HTML
+	const escapedText = text
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#039;');
+
+	const rawHtml = marked.parseInline(escapedText, { async: false }) as string;
 
 	return rawHtml;
 }
