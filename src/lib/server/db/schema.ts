@@ -19,7 +19,7 @@ export const collection = sqliteTable('collection', {
 		.references(() => user.id, { onDelete: 'cascade' }),
 	title: text('title').notNull(),
 	description: text('description'),
-	isShared: integer('is_shared', { mode: 'boolean' }).notNull().default(false),
+	isShared: integer('is_shared', { mode: 'boolean' }).notNull().default(true),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull(),

@@ -67,8 +67,16 @@
 							{data.user.name.charAt(0).toUpperCase()}
 						</div>
 					{/if}
-					<div class="flex flex-col">
+					<div class="flex flex-col gap-0.5 items-start">
 						<span class="font-bold text-gray-800 dark:text-gray-200">{data.user.name}</span>
+						<span 
+							class="rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider 
+							{data.user.type === 'ADMIN' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' : 
+							data.user.type === 'PREMIUM' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-500' : 
+							'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'}"
+						>
+							{data.user.type || 'BASIC'}
+						</span>
 					</div>
 				</div>
 				<div class="mb-4">

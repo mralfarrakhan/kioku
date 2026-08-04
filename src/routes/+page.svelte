@@ -3,6 +3,7 @@
 	import type { PageServerData } from './$types';
 	import Pagination from '$lib/components/Pagination.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
+	import PremiumFeatureModal from '$lib/components/PremiumFeatureModal.svelte';
 
 	let { data }: { data: PageServerData } = $props();
 
@@ -11,6 +12,8 @@
 	let confirmDeleteModal: ReturnType<typeof ConfirmModal> | undefined = $state();
 	let deleteCollectionId = $state<string | null>(null);
 	let deleteFormElement: HTMLFormElement | undefined = $state();
+	
+	let premiumModal: ReturnType<typeof PremiumFeatureModal> | undefined = $state();
 </script>
 
 <div class="mb-8 flex items-center justify-between">
@@ -64,13 +67,26 @@
 						type="checkbox"
 						name="isShared"
 						id="isShared"
-						class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+						checked
+						disabled={data.user.type === 'BASIC'}
+						class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700"
 					/>
 					<label
 						for="isShared"
-						class="ml-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
-						>Make Public (Shared)</label
+						class="ml-2 block text-sm font-semibold text-gray-700 dark:text-gray-300 {data.user.type === 'BASIC' ? 'opacity-50' : ''}"
 					>
+						Make Public (Shared)
+					</label>
+					{#if data.user.type === 'BASIC'}
+						<button
+							type="button"
+							class="ml-2 text-sm font-semibold text-blue-500 hover:underline"
+							onclick={() => premiumModal?.showModal()}
+						>
+							More...
+						</button>
+						<input type="hidden" name="isShared" value="on" />
+					{/if}
 				</div>
 				<div class="flex justify-end gap-3">
 					<button
@@ -115,6 +131,8 @@
 >
 	<input type="hidden" name="id" value={deleteCollectionId} />
 </form>
+
+<PremiumFeatureModal bind:this={premiumModal} />
 
 {#if data.collections.length === 0}
 	<div

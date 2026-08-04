@@ -8,6 +8,7 @@
 	import TagInput from '$lib/components/TagInput.svelte';
 	import Tag from '$lib/components/Tag.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
+	import PremiumFeatureModal from '$lib/components/PremiumFeatureModal.svelte';
 
 	let { data }: { data: PageServerData } = $props();
 
@@ -16,6 +17,8 @@
 
 	let showEditCollection = $state(false);
 	let showQuizOptions = $state(false);
+	
+	let premiumModal: ReturnType<typeof PremiumFeatureModal> | undefined = $state();
 
 	let searchParams = $derived(page.url.searchParams);
 	let searchQuery = $state(page.url.searchParams.get('q') || '');
@@ -164,14 +167,26 @@
 					type="checkbox"
 					name="isShared"
 					id="isShared"
-					checked={data.collection.isShared}
-					class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+					checked={data.collection.isShared || page.data.user?.type === 'BASIC'}
+					disabled={page.data.user?.type === 'BASIC'}
+					class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700"
 				/>
 				<label
 					for="isShared"
-					class="ml-2 block text-sm font-semibold text-gray-700 dark:text-gray-300"
-					>Make Public (Shared)</label
+					class="ml-2 block text-sm font-semibold text-gray-700 dark:text-gray-300 {page.data.user?.type === 'BASIC' ? 'opacity-50' : ''}"
 				>
+					Make Public (Shared)
+				</label>
+				{#if page.data.user?.type === 'BASIC'}
+					<button
+						type="button"
+						class="ml-2 text-sm font-semibold text-blue-500 hover:underline"
+						onclick={() => premiumModal?.showModal()}
+					>
+						More...
+					</button>
+					<input type="hidden" name="isShared" value="on" />
+				{/if}
 			</div>
 			<div class="flex justify-end gap-3">
 				<button
@@ -217,6 +232,8 @@
 		<input type="hidden" name="id" value={deleteCardId} />
 	</form>
 {/if}
+
+<PremiumFeatureModal bind:this={premiumModal} />
 
 <div
 	class="mb-8 flex flex-col justify-between gap-4 rounded-2xl border-2 border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center dark:border-gray-800 dark:bg-gray-800"

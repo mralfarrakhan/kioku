@@ -65,7 +65,11 @@ export const actions: Actions = {
 		const formData = await event.request.formData();
 		const title = formData.get('title')?.toString();
 		const description = formData.get('description')?.toString();
-		const isShared = formData.get('isShared')?.toString() === 'on';
+		let isShared = formData.get('isShared')?.toString() === 'on';
+
+		if (user.type === 'BASIC') {
+			isShared = true; // Force public for BASIC
+		}
 
 		if (!title) {
 			return fail(400, { message: 'Title is required' });

@@ -14,6 +14,15 @@ const authConfig = {
 			clientSecret: env.GOOGLE_CLIENT_SECRET as string
 		}
 	},
+	user: {
+		additionalFields: {
+			type: {
+				type: "string",
+				required: true,
+				defaultValue: "BASIC"
+			}
+		}
+	},
 	plugins: [
 		sveltekitCookies(getRequestEvent) // make sure this is the last plugin in the array
 	]
