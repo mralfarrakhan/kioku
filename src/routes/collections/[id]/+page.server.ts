@@ -34,19 +34,22 @@ export const load: PageServerLoad = async (event) => {
 	const status = event.url.searchParams.get('status');
 	const difficulty = event.url.searchParams.get('difficulty');
 	const itemType = event.url.searchParams.get('itemType') || 'all';
-	
-	const conditions = [
-		eq(flashcard.collectionId, id)
-	];
+
+	const conditions = [eq(flashcard.collectionId, id)];
 
 	if (itemType === 'flashcard' || itemType === 'note') {
 		conditions.push(eq(flashcard.type, itemType));
 	}
 
 	if (tagsParam) {
-		const tagsList = tagsParam.split(',').map((t) => t.trim()).filter(Boolean);
+		const tagsList = tagsParam
+			.split(',')
+			.map((t) => t.trim())
+			.filter(Boolean);
 		if (tagsList.length > 0) {
-			const tagConditions = tagsList.map(tag => sql`EXISTS (SELECT 1 FROM json_each(${flashcard.tags}) WHERE value = ${tag})`);
+			const tagConditions = tagsList.map(
+				(tag) => sql`EXISTS (SELECT 1 FROM json_each(${flashcard.tags}) WHERE value = ${tag})`
+			);
 			conditions.push(and(...tagConditions)!);
 		}
 	}
@@ -54,11 +57,24 @@ export const load: PageServerLoad = async (event) => {
 	if (status) {
 		const now = Date.now();
 		if (status === 'new') {
-			conditions.push(or(eq(userFlashcardProgress.repetitions, 0), sql`${userFlashcardProgress.id} IS NULL`)!);
+			conditions.push(
+				or(eq(userFlashcardProgress.repetitions, 0), sql`${userFlashcardProgress.id} IS NULL`)!
+			);
 		} else if (status === 'learning') {
-			conditions.push(and(sql`${userFlashcardProgress.id} IS NOT NULL`, sql`${userFlashcardProgress.repetitions} > 0`, sql`${userFlashcardProgress.interval} < 21`)!);
+			conditions.push(
+				and(
+					sql`${userFlashcardProgress.id} IS NOT NULL`,
+					sql`${userFlashcardProgress.repetitions} > 0`,
+					sql`${userFlashcardProgress.interval} < 21`
+				)!
+			);
 		} else if (status === 'due') {
-			conditions.push(and(sql`${userFlashcardProgress.id} IS NOT NULL`, sql`${userFlashcardProgress.nextReviewAt} <= ${now}`)!);
+			conditions.push(
+				and(
+					sql`${userFlashcardProgress.id} IS NOT NULL`,
+					sql`${userFlashcardProgress.nextReviewAt} <= ${now}`
+				)!
+			);
 		}
 	}
 
@@ -66,7 +82,12 @@ export const load: PageServerLoad = async (event) => {
 		if (difficulty === 'hard') {
 			conditions.push(sql`${userFlashcardProgress.easeFactor} < 2.0`);
 		} else if (difficulty === 'medium') {
-			conditions.push(and(sql`${userFlashcardProgress.easeFactor} >= 2.0`, sql`${userFlashcardProgress.easeFactor} <= 2.5`)!);
+			conditions.push(
+				and(
+					sql`${userFlashcardProgress.easeFactor} >= 2.0`,
+					sql`${userFlashcardProgress.easeFactor} <= 2.5`
+				)!
+			);
 		} else if (difficulty === 'easy') {
 			conditions.push(sql`${userFlashcardProgress.easeFactor} > 2.5`);
 		}
@@ -113,22 +134,16 @@ export const load: PageServerLoad = async (event) => {
 		// FTS5 MATCH operator format for trigram/unicode61
 		// By wrapping with quotes it escapes some keywords, but FTS5 query syntax is strict.
 		// A simple query parameterization string:
-		const matchQuery = `"${ftsQuery}"*`; 
-		
+		const matchQuery = `"${ftsQuery}"*`;
+
 		baseQuery = baseQuery.innerJoin(
 			flashcardFts,
-			and(
-				eq(flashcard.id, flashcardFts.id),
-				sql`flashcard_fts MATCH ${matchQuery}`
-			)
+			and(eq(flashcard.id, flashcardFts.id), sql`flashcard_fts MATCH ${matchQuery}`)
 		) as any;
-		
+
 		countQuery = countQuery.innerJoin(
 			flashcardFts,
-			and(
-				eq(flashcard.id, flashcardFts.id),
-				sql`flashcard_fts MATCH ${matchQuery}`
-			)
+			and(eq(flashcard.id, flashcardFts.id), sql`flashcard_fts MATCH ${matchQuery}`)
 		) as any;
 	}
 
@@ -168,20 +183,19 @@ export const load: PageServerLoad = async (event) => {
 
 	if (q) {
 		const ftsQuery = q.replace(/"/g, '""');
-		const matchQuery = `"${ftsQuery}"*`; 
+		const matchQuery = `"${ftsQuery}"*`;
 		typeCountsQueryBase = typeCountsQueryBase.innerJoin(
 			flashcardFts,
-			and(
-				eq(flashcard.id, flashcardFts.id),
-				sql`flashcard_fts MATCH ${matchQuery}`
-			)
+			and(eq(flashcard.id, flashcardFts.id), sql`flashcard_fts MATCH ${matchQuery}`)
 		) as any;
 	}
 
-	const typeCountsResult = await typeCountsQueryBase.where(and(...countConditions)).groupBy(flashcard.type);
+	const typeCountsResult = await typeCountsQueryBase
+		.where(and(...countConditions))
+		.groupBy(flashcard.type);
 	const typeCounts = {
-		flashcard: typeCountsResult.find(r => r.type === 'flashcard')?.value || 0,
-		note: typeCountsResult.find(r => r.type === 'note')?.value || 0
+		flashcard: typeCountsResult.find((r) => r.type === 'flashcard')?.value || 0,
+		note: typeCountsResult.find((r) => r.type === 'note')?.value || 0
 	};
 
 	const d1 = event.platform?.env?.DB as D1Database | undefined;
@@ -257,7 +271,7 @@ export const actions: Actions = {
 		const term = formData.get('term')?.toString();
 		const definition = formData.get('definition')?.toString();
 		const type = formData.get('type')?.toString() === 'note' ? 'note' : 'flashcard';
-		
+
 		let tags: string[] = [];
 		try {
 			const parsed = JSON.parse(formData.get('tags')?.toString() || '[]');
@@ -372,7 +386,8 @@ export const actions: Actions = {
 			.where(eq(flashcard.collectionId, collectionId));
 
 		const isDuplicate = existingCards.some(
-			(card) => card.id !== flashcardId && card.term.trim().toLowerCase() === term.trim().toLowerCase()
+			(card) =>
+				card.id !== flashcardId && card.term.trim().toLowerCase() === term.trim().toLowerCase()
 		);
 
 		if (isDuplicate) {

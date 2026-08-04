@@ -4,7 +4,10 @@
 	import { toast } from '$lib/stores/toast.svelte';
 	import TagInput from './TagInput.svelte';
 
-	let { suggestedTags = [], type = 'flashcard' } = $props<{ suggestedTags?: string[], type?: 'flashcard' | 'note' }>();
+	let { suggestedTags = [], type = 'flashcard' } = $props<{
+		suggestedTags?: string[];
+		type?: 'flashcard' | 'note';
+	}>();
 
 	let createCardDialog: HTMLDialogElement | undefined = $state();
 	let createCardError = $state<string | null>(null);
@@ -28,7 +31,9 @@
 	class="m-auto w-full max-w-2xl rounded-2xl border-0 bg-white p-6 shadow-2xl backdrop:bg-gray-900/50 backdrop:backdrop-blur-sm dark:border dark:border-gray-800 dark:bg-gray-900"
 >
 	<div class="mb-4 flex items-center justify-between">
-		<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">Add New {type === 'note' ? 'Note' : 'Flashcard'}</h2>
+		<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">
+			Add New {type === 'note' ? 'Note' : 'Flashcard'}
+		</h2>
 		<button
 			type="button"
 			onclick={closeModal}

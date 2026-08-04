@@ -37,8 +37,13 @@ export const flashcard = sqliteTable('flashcard', {
 		.references(() => collection.id, { onDelete: 'cascade' }),
 	term: text('term').notNull(),
 	definition: text('definition').notNull(),
-	type: text('type', { enum: ['flashcard', 'note'] }).notNull().default('flashcard'),
-	tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
+	type: text('type', { enum: ['flashcard', 'note'] })
+		.notNull()
+		.default('flashcard'),
+	tags: text('tags', { mode: 'json' })
+		.$type<string[]>()
+		.notNull()
+		.default(sql`'[]'`),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull(),

@@ -9,5 +9,5 @@ bun.lockb
 /static/
 /drizzle/
 
-# cloudfalre
-worker-configurations.d.ts
+# cloudflare
+worker-configuration.d.ts

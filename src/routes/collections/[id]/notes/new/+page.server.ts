@@ -92,7 +92,7 @@ export const actions: Actions = {
 			.select()
 			.from(collection)
 			.where(and(eq(collection.id, id), eq(collection.userId, user.id)));
-		
+
 		if (cols.length === 0) return fail(403, { message: 'Forbidden' });
 
 		try {
@@ -106,7 +106,7 @@ export const actions: Actions = {
 		} catch (e) {
 			return fail(500, { message: 'Failed to save note' });
 		}
-		
+
 		throw redirect(302, `/collections/${id}`);
 	}
 };

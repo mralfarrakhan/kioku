@@ -171,37 +171,37 @@ export const load: PageServerLoad = async (event) => {
 	// Generate distractors for each card
 	const quizSession = selectedCards.map((c) => {
 		const others = allCards.filter((other) => other.id !== c.id);
-		
+
 		const cardTags = c.tags || [];
-		
+
 		// Group others by the number of shared tags
 		const matchGroups = new Map<number, typeof others>();
-		
+
 		for (const other of others) {
 			const otherTags = other.tags || [];
 			let sharedCount = 0;
 			if (cardTags.length > 0 && otherTags.length > 0) {
 				sharedCount = otherTags.filter((t) => cardTags.includes(t)).length;
 			}
-			
+
 			if (!matchGroups.has(sharedCount)) {
 				matchGroups.set(sharedCount, []);
 			}
 			matchGroups.get(sharedCount)!.push(other);
 		}
-		
+
 		// Sort the match counts descending
 		const sortedMatchCounts = Array.from(matchGroups.keys()).sort((a, b) => b - a);
-		
-		let distractorCards: typeof others = [];
-		
+
+		const distractorCards: typeof others = [];
+
 		// Pick from highest match groups downwards
 		for (const matchCount of sortedMatchCounts) {
 			if (distractorCards.length >= 3) break;
-			
+
 			const group = matchGroups.get(matchCount)!;
 			const shuffledGroup = shuffle([...group]);
-			
+
 			const needed = 3 - distractorCards.length;
 			distractorCards.push(...shuffledGroup.slice(0, needed));
 		}

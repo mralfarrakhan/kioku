@@ -1,7 +1,7 @@
 <script lang="ts">
 	let {
 		title = 'Premium Feature',
-		message = 'Private collections are not available right now. This feature is restricted to PREMIUM or ADMIN users.',
+		message = 'Private collections are not available right now. This feature is restricted to PREMIUM or ADMIN users.'
 	} = $props<{
 		title?: string;
 		message?: string;
@@ -25,15 +25,20 @@
 		if (e.target === dialog) close();
 	}}
 >
-	<div class="w-full max-w-sm p-6" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="document">
+	<div
+		class="w-full max-w-sm p-6"
+		onclick={(e) => e.stopPropagation()}
+		onkeydown={(e) => e.stopPropagation()}
+		role="document"
+	>
 		<h3 class="mb-2 text-xl font-bold text-gray-900 dark:text-gray-100">{title}</h3>
 		<p class="mb-6 text-gray-600 dark:text-gray-400">{message}</p>
-		
+
 		<div class="flex justify-end gap-3">
 			<button
 				type="button"
 				onclick={close}
-				class="rounded-xl px-4 py-2 font-bold bg-blue-500 text-white transition hover:bg-blue-600"
+				class="rounded-xl bg-blue-500 px-4 py-2 font-bold text-white transition hover:bg-blue-600"
 			>
 				Okay
 			</button>

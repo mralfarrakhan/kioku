@@ -44,10 +44,15 @@
 		if (oncancel) oncancel();
 	}}
 >
-	<div class="w-full max-w-sm p-6" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="document">
+	<div
+		class="w-full max-w-sm p-6"
+		onclick={(e) => e.stopPropagation()}
+		onkeydown={(e) => e.stopPropagation()}
+		role="document"
+	>
 		<h3 class="mb-2 text-xl font-bold text-gray-900 dark:text-gray-100">{title}</h3>
 		<p class="mb-6 text-gray-600 dark:text-gray-400">{message}</p>
-		
+
 		<div class="flex justify-end gap-3">
 			<button
 				type="button"
@@ -59,7 +64,9 @@
 			<button
 				type="button"
 				onclick={handleConfirm}
-				class="rounded-xl px-4 py-2 font-bold text-white transition {confirmStyle === 'danger' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}"
+				class="rounded-xl px-4 py-2 font-bold text-white transition {confirmStyle === 'danger'
+					? 'bg-red-500 hover:bg-red-600'
+					: 'bg-blue-500 hover:bg-blue-600'}"
 			>
 				{confirmText}
 			</button>

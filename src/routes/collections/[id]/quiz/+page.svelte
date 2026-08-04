@@ -136,13 +136,22 @@
 	async function handleNoteRating(quality: number) {
 		if (selectedOption !== null) return;
 		selectedOption = 'rated';
-		
+
 		let isCorrectMock = true;
 		let timeMock = 1000;
-		if (quality === 1) { isCorrectMock = false; timeMock = 10000; }
-		else if (quality === 3) { isCorrectMock = true; timeMock = 10000; }
-		else if (quality === 4) { isCorrectMock = true; timeMock = 4000; }
-		else if (quality === 5) { isCorrectMock = true; timeMock = 1000; }
+		if (quality === 1) {
+			isCorrectMock = false;
+			timeMock = 10000;
+		} else if (quality === 3) {
+			isCorrectMock = true;
+			timeMock = 10000;
+		} else if (quality === 4) {
+			isCorrectMock = true;
+			timeMock = 4000;
+		} else if (quality === 5) {
+			isCorrectMock = true;
+			timeMock = 1000;
+		}
 
 		// Fire and forget the API call for a snappy experience
 		const formData = new FormData();
@@ -243,19 +252,41 @@
 	<div class="flex flex-1 flex-col justify-center">
 		{#if !isFinished}
 			{#if currentCard.type === 'note'}
-				<div class="mb-10 text-center border-b-2 border-gray-100 pb-6 dark:border-gray-800">
-					<h2 class="text-4xl font-extrabold whitespace-pre-wrap text-gray-900 md:text-5xl dark:text-gray-100 mb-6">
+				<div class="mb-10 border-b-2 border-gray-100 pb-6 text-center dark:border-gray-800">
+					<h2
+						class="mb-6 text-4xl font-extrabold whitespace-pre-wrap text-gray-900 md:text-5xl dark:text-gray-100"
+					>
 						{@html parseInlineMarkdown(currentCard.term)}
 					</h2>
-					<div class="prose dark:prose-invert max-w-none text-left mx-auto">
+					<div class="mx-auto prose max-w-none text-left dark:prose-invert">
 						{@html parseMarkdown(currentCard.correctAnswer)}
 					</div>
 				</div>
-				<div class="flex flex-col md:flex-row gap-4 mt-8 justify-center">
-					<button onclick={() => handleNoteRating(1)} disabled={selectedOption !== null} class="flex-1 rounded-2xl py-4 font-bold transition border-2 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/20">Forgot (1)</button>
-					<button onclick={() => handleNoteRating(3)} disabled={selectedOption !== null} class="flex-1 rounded-2xl py-4 font-bold transition border-2 border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-900/50 dark:text-orange-400 dark:hover:bg-orange-900/20">Hard (3)</button>
-					<button onclick={() => handleNoteRating(4)} disabled={selectedOption !== null} class="flex-1 rounded-2xl py-4 font-bold transition border-2 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/20">Good (4)</button>
-					<button onclick={() => handleNoteRating(5)} disabled={selectedOption !== null} class="flex-1 rounded-2xl py-4 font-bold transition border-2 border-green-200 text-green-600 hover:bg-green-50 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20">Easy (5)</button>
+				<div class="mt-8 flex flex-col justify-center gap-4 md:flex-row">
+					<button
+						onclick={() => handleNoteRating(1)}
+						disabled={selectedOption !== null}
+						class="flex-1 rounded-2xl border-2 border-red-200 py-4 font-bold text-red-600 transition hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/20"
+						>Forgot (1)</button
+					>
+					<button
+						onclick={() => handleNoteRating(3)}
+						disabled={selectedOption !== null}
+						class="flex-1 rounded-2xl border-2 border-orange-200 py-4 font-bold text-orange-600 transition hover:bg-orange-50 dark:border-orange-900/50 dark:text-orange-400 dark:hover:bg-orange-900/20"
+						>Hard (3)</button
+					>
+					<button
+						onclick={() => handleNoteRating(4)}
+						disabled={selectedOption !== null}
+						class="flex-1 rounded-2xl border-2 border-blue-200 py-4 font-bold text-blue-600 transition hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/20"
+						>Good (4)</button
+					>
+					<button
+						onclick={() => handleNoteRating(5)}
+						disabled={selectedOption !== null}
+						class="flex-1 rounded-2xl border-2 border-green-200 py-4 font-bold text-green-600 transition hover:bg-green-50 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20"
+						>Easy (5)</button
+					>
 				</div>
 			{:else}
 				<div class="mb-10 text-center">
@@ -266,135 +297,143 @@
 					</div>
 				</div>
 
-			<div class="flex flex-col gap-4">
-				{#each currentCard.options as optionObj, index}
-					<button
-						onclick={() => handleOptionClick(optionObj.text)}
-						disabled={selectedOption !== null}
-						class="relative flex min-h-[100px] w-full items-center justify-center rounded-2xl border-2 p-6 text-center text-lg font-bold transition-all
+				<div class="flex flex-col gap-4">
+					{#each currentCard.options as optionObj, index}
+						<button
+							onclick={() => handleOptionClick(optionObj.text)}
+							disabled={selectedOption !== null}
+							class="relative flex min-h-[100px] w-full items-center justify-center rounded-2xl border-2 p-6 text-center text-lg font-bold transition-all
 							{selectedOption === null
-							? 'border-gray-200 bg-white text-gray-700 shadow-[0_4px_0_0_rgba(229,231,235,1)] hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50 hover:shadow-[0_4px_0_0_rgba(147,197,253,1)] active:translate-y-1 active:shadow-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:shadow-[0_4px_0_0_rgba(31,41,55,1)] dark:hover:border-blue-500 dark:hover:bg-blue-900/30 dark:hover:shadow-[0_4px_0_0_rgba(59,130,246,0.5)]'
-							: ''}
+								? 'border-gray-200 bg-white text-gray-700 shadow-[0_4px_0_0_rgba(229,231,235,1)] hover:-translate-y-1 hover:border-blue-400 hover:bg-blue-50 hover:shadow-[0_4px_0_0_rgba(147,197,253,1)] active:translate-y-1 active:shadow-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:shadow-[0_4px_0_0_rgba(31,41,55,1)] dark:hover:border-blue-500 dark:hover:bg-blue-900/30 dark:hover:shadow-[0_4px_0_0_rgba(59,130,246,0.5)]'
+								: ''}
 							{selectedOption === optionObj.text && isCorrect
-							? 'border-green-500 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-							: ''}
+								? 'border-green-500 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+								: ''}
 							{selectedOption === optionObj.text && !isCorrect
-							? 'border-red-500 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-							: ''}
-							{selectedOption !== null && selectedOption !== optionObj.text && optionObj.text === currentCard.correctAnswer
-							? 'border-green-500 bg-green-50 text-green-700 ring-2 ring-green-500 ring-offset-2 dark:bg-green-900/20 dark:text-green-400 dark:ring-offset-gray-950'
-							: ''}
-							{selectedOption !== null && selectedOption !== optionObj.text && optionObj.text !== currentCard.correctAnswer
-							? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500'
-							: ''}"
-					>
-						<div
-							class="absolute top-1/2 left-4 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border-2 border-current font-bold opacity-50"
+								? 'border-red-500 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+								: ''}
+							{selectedOption !== null &&
+							selectedOption !== optionObj.text &&
+							optionObj.text === currentCard.correctAnswer
+								? 'border-green-500 bg-green-50 text-green-700 ring-2 ring-green-500 ring-offset-2 dark:bg-green-900/20 dark:text-green-400 dark:ring-offset-gray-950'
+								: ''}
+							{selectedOption !== null &&
+							selectedOption !== optionObj.text &&
+							optionObj.text !== currentCard.correctAnswer
+								? 'cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400 opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-500'
+								: ''}"
 						>
-							{index + 1}
-						</div>
-						<span class="pl-12">
-							{optionObj.text}
-						</span>
-					</button>
-				{/each}
-			</div>
+							<div
+								class="absolute top-1/2 left-4 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border-2 border-current font-bold opacity-50"
+							>
+								{index + 1}
+							</div>
+							<span class="pl-12">
+								{optionObj.text}
+							</span>
+						</button>
+					{/each}
+				</div>
 
-			<!-- Status indicator area -->
-			<div class="mt-8 flex h-20 items-center justify-center">
-				{#if isCorrect !== null}
-					<div class="flex items-center gap-6">
-						{#if currentCard.type !== 'note'}
-						<div
-							class="flex items-center gap-2 text-xl font-extrabold {isCorrect
-								? 'animate-bounce text-green-500'
-								: 'text-red-500'}"
-						>
-							{#if isCorrect}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="28"
-									height="28"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="3"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path d="m9 11 3 3L22 4" /></svg
+				<!-- Status indicator area -->
+				<div class="mt-8 flex h-20 items-center justify-center">
+					{#if isCorrect !== null}
+						<div class="flex items-center gap-6">
+							{#if currentCard.type !== 'note'}
+								<div
+									class="flex items-center gap-2 text-xl font-extrabold {isCorrect
+										? 'animate-bounce text-green-500'
+										: 'text-red-500'}"
 								>
-								Awesome!
-							{:else}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="28"
-									height="28"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="3"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg
+									{#if isCorrect}
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="28"
+											height="28"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="3"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path
+												d="m9 11 3 3L22 4"
+											/></svg
+										>
+										Awesome!
+									{:else}
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											width="28"
+											height="28"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="3"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path
+												d="m9 9 6 6"
+											/></svg
+										>
+										Correct answer:
+										{currentCard.correctAnswer}
+									{/if}
+								</div>
+							{/if}
+
+							{#if oldScore !== null}
+								<div
+									class="animate-fade-in flex items-center gap-3 border-l-2 border-gray-100 pl-6 dark:border-gray-800"
 								>
-								Correct answer:
-								{currentCard.correctAnswer}
+									<div class="relative flex h-14 w-14 items-center justify-center">
+										<svg
+											class="absolute inset-0 h-full w-full -rotate-90 transform"
+											viewBox="0 0 36 36"
+										>
+											<circle
+												cx="18"
+												cy="18"
+												r="15"
+												fill="none"
+												class="stroke-gray-100 dark:stroke-gray-800"
+												stroke-width="4"
+											></circle>
+											<circle
+												cx="18"
+												cy="18"
+												r="15"
+												fill="none"
+												class={displayLevel >= 3
+													? 'stroke-green-500'
+													: displayLevel >= 1
+														? 'stroke-blue-500'
+														: 'stroke-yellow-400'}
+												stroke-width="4"
+												stroke-dasharray="94.2"
+												stroke-dashoffset={94.2 - (displayProgress / 100) * 94.2}
+												stroke-linecap="round"
+												style="transition: {ringTransition};"
+											></circle>
+										</svg>
+										<span class="relative text-xs font-bold text-gray-700 dark:text-gray-300">
+											Lv.{displayLevel}
+										</span>
+									</div>
+									{#if fluencyChange !== null}
+										<span
+											class="text-lg font-extrabold {fluencyChange > 0
+												? 'text-green-500'
+												: 'text-red-500'} animate-slide-up"
+										>
+											{fluencyChange > 0 ? '+' : ''}{fluencyChange} XP
+										</span>
+									{/if}
+								</div>
 							{/if}
 						</div>
-						{/if}
-
-						{#if oldScore !== null}
-							<div
-								class="animate-fade-in flex items-center gap-3 border-l-2 border-gray-100 pl-6 dark:border-gray-800"
-							>
-								<div class="relative flex h-14 w-14 items-center justify-center">
-									<svg
-										class="absolute inset-0 h-full w-full -rotate-90 transform"
-										viewBox="0 0 36 36"
-									>
-										<circle
-											cx="18"
-											cy="18"
-											r="15"
-											fill="none"
-											class="stroke-gray-100 dark:stroke-gray-800"
-											stroke-width="4"
-										></circle>
-										<circle
-											cx="18"
-											cy="18"
-											r="15"
-											fill="none"
-											class={displayLevel >= 3
-												? 'stroke-green-500'
-												: displayLevel >= 1
-													? 'stroke-blue-500'
-													: 'stroke-yellow-400'}
-											stroke-width="4"
-											stroke-dasharray="94.2"
-											stroke-dashoffset={94.2 - (displayProgress / 100) * 94.2}
-											stroke-linecap="round"
-											style="transition: {ringTransition};"
-										></circle>
-									</svg>
-									<span class="relative text-xs font-bold text-gray-700 dark:text-gray-300">
-										Lv.{displayLevel}
-									</span>
-								</div>
-								{#if fluencyChange !== null}
-									<span
-										class="text-lg font-extrabold {fluencyChange > 0
-											? 'text-green-500'
-											: 'text-red-500'} animate-slide-up"
-									>
-										{fluencyChange > 0 ? '+' : ''}{fluencyChange} XP
-									</span>
-								{/if}
-							</div>
-						{/if}
-					</div>
-				{/if}
-			</div>
+					{/if}
+				</div>
 			{/if}
 		{:else}
 			<div class="animate-fade-in flex h-full flex-col items-center justify-center text-center">

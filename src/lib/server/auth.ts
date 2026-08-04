@@ -17,9 +17,9 @@ const authConfig = {
 	user: {
 		additionalFields: {
 			type: {
-				type: "string",
+				type: 'string',
 				required: true,
-				defaultValue: "BASIC"
+				defaultValue: 'BASIC'
 			}
 		}
 	},

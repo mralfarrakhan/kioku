@@ -7,7 +7,7 @@
 ## Database Migrations (Drizzle)
 
 - When modifying the database schema (`src/lib/server/db/schema.ts`), ALWAYS use `bun run db:generate` to generate the migration file automatically.
-- Do NOT create custom SQL migration files manually unless absolutely necessary. 
+- Do NOT create custom SQL migration files manually unless absolutely necessary.
 - If a data migration (like an `UPDATE`) is needed alongside a schema change, first generate the schema migration using `bun run db:generate`, and then manually inject the custom SQL data migration into that newly generated file.
 
 ---

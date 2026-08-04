@@ -25,11 +25,12 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(302, '/');
 	}
 
-	const notes = await db.select().from(flashcard).where(and(
-		eq(flashcard.id, noteId),
-		eq(flashcard.collectionId, id),
-		eq(flashcard.type, 'note')
-	));
+	const notes = await db
+		.select()
+		.from(flashcard)
+		.where(
+			and(eq(flashcard.id, noteId), eq(flashcard.collectionId, id), eq(flashcard.type, 'note'))
+		);
 
 	if (notes.length === 0) {
 		throw error(404, 'Note not found');
@@ -103,25 +104,23 @@ export const actions: Actions = {
 			.select()
 			.from(collection)
 			.where(and(eq(collection.id, id), eq(collection.userId, user.id)));
-		
+
 		if (cols.length === 0) return fail(403, { message: 'Forbidden' });
 
 		try {
-			await db.update(flashcard)
+			await db
+				.update(flashcard)
 				.set({
 					term: term.trim(),
 					definition: definition.trim(),
 					tags,
 					updatedAt: new Date()
 				})
-				.where(and(
-					eq(flashcard.id, noteId),
-					eq(flashcard.collectionId, id)
-				));
+				.where(and(eq(flashcard.id, noteId), eq(flashcard.collectionId, id)));
 		} catch (e) {
 			return fail(500, { message: 'Failed to update note' });
 		}
-		
+
 		throw redirect(302, `/collections/${id}/notes/${noteId}`);
 	}
 };
