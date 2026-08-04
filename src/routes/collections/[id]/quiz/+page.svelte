@@ -13,7 +13,7 @@
 
 	let isRetryPhase = $state(false);
 	let incorrectQueue = $state<typeof quizCards>([]);
-	let originalQuizLength = data.quiz.length;
+	let originalQuizLength = data.originalQuizLength;
 
 	let currentCard = $derived(quizCards[currentIndex]);
 	let isFinished = $derived(currentIndex >= quizCards.length);
@@ -124,17 +124,6 @@
 				currentIndex = 0;
 			}
 
-			if (currentIndex < quizCards.length && !isRetryPhase && data.notes && data.notes.length > 0 && Math.random() < 0.1) {
-				const randomNote = data.notes[Math.floor(Math.random() * data.notes.length)];
-				quizCards.splice(currentIndex, 0, {
-					flashcardId: randomNote.id,
-					term: randomNote.term,
-					correctAnswer: randomNote.definition,
-					options: [],
-					type: 'note'
-				});
-			}
-
 			selectedOption = null;
 			isCorrect = null;
 			oldScore = null;
@@ -142,6 +131,50 @@
 			fluencyChange = null;
 			questionStartTime = Date.now();
 		}, delayBeforeNext);
+	}
+
+	async function handleNoteRating(quality: number) {
+		if (selectedOption !== null) return;
+		selectedOption = 'rated';
+		
+		let isCorrectMock = true;
+		let timeMock = 1000;
+		if (quality === 1) { isCorrectMock = false; timeMock = 10000; }
+		else if (quality === 3) { isCorrectMock = true; timeMock = 10000; }
+		else if (quality === 4) { isCorrectMock = true; timeMock = 4000; }
+		else if (quality === 5) { isCorrectMock = true; timeMock = 1000; }
+
+		// Fire and forget the API call for a snappy experience
+		const formData = new FormData();
+		formData.append('flashcardId', currentCard.flashcardId);
+		formData.append('isCorrect', String(isCorrectMock));
+		formData.append('responseTimeMs', String(timeMock));
+
+		fetch('?/recordResult', {
+			method: 'POST',
+			body: formData
+		});
+
+		if (quality === 1) {
+			incorrectQueue.push(currentCard);
+		}
+
+		// Proceed almost instantly
+		setTimeout(() => {
+			currentIndex++;
+			if (currentIndex >= quizCards.length && incorrectQueue.length > 0) {
+				isRetryPhase = true;
+				quizCards = [...incorrectQueue];
+				incorrectQueue = [];
+				currentIndex = 0;
+			}
+			selectedOption = null;
+			isCorrect = null;
+			oldScore = null;
+			newScore = null;
+			fluencyChange = null;
+			questionStartTime = Date.now();
+		}, 150);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -218,20 +251,12 @@
 						{@html parseMarkdown(currentCard.correctAnswer)}
 					</div>
 				</div>
-				<button
-					onclick={() => {
-						currentIndex++;
-						if (currentIndex >= quizCards.length && incorrectQueue.length > 0) {
-							isRetryPhase = true;
-							quizCards = [...incorrectQueue];
-							incorrectQueue = [];
-							currentIndex = 0;
-						}
-					}}
-					class="w-full mt-8 rounded-2xl bg-blue-500 py-4 text-center text-xl font-extrabold text-white shadow-[0_4px_0_0_rgba(37,99,235,1)] transition hover:-translate-y-1 hover:shadow-[0_6px_0_0_rgba(37,99,235,1)] active:translate-y-1 active:shadow-none"
-				>
-					Continue
-				</button>
+				<div class="flex flex-col md:flex-row gap-4 mt-8 justify-center">
+					<button onclick={() => handleNoteRating(1)} disabled={selectedOption !== null} class="flex-1 rounded-2xl py-4 font-bold transition border-2 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/20">Forgot (1)</button>
+					<button onclick={() => handleNoteRating(3)} disabled={selectedOption !== null} class="flex-1 rounded-2xl py-4 font-bold transition border-2 border-orange-200 text-orange-600 hover:bg-orange-50 dark:border-orange-900/50 dark:text-orange-400 dark:hover:bg-orange-900/20">Hard (3)</button>
+					<button onclick={() => handleNoteRating(4)} disabled={selectedOption !== null} class="flex-1 rounded-2xl py-4 font-bold transition border-2 border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-900/50 dark:text-blue-400 dark:hover:bg-blue-900/20">Good (4)</button>
+					<button onclick={() => handleNoteRating(5)} disabled={selectedOption !== null} class="flex-1 rounded-2xl py-4 font-bold transition border-2 border-green-200 text-green-600 hover:bg-green-50 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20">Easy (5)</button>
+				</div>
 			{:else}
 				<div class="mb-10 text-center">
 					<div
@@ -279,6 +304,7 @@
 			<div class="mt-8 flex h-20 items-center justify-center">
 				{#if isCorrect !== null}
 					<div class="flex items-center gap-6">
+						{#if currentCard.type !== 'note'}
 						<div
 							class="flex items-center gap-2 text-xl font-extrabold {isCorrect
 								? 'animate-bounce text-green-500'
@@ -315,6 +341,7 @@
 								{currentCard.correctAnswer}
 							{/if}
 						</div>
+						{/if}
 
 						{#if oldScore !== null}
 							<div

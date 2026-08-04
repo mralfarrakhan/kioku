@@ -62,12 +62,40 @@ export const load: PageServerLoad = async (event) => {
 };
 
 export const actions: Actions = {
-	deleteNote: async (event) => {
+	updateNote: async (event) => {
 		const user = event.locals.user;
 		if (!user) return fail(401, { message: 'Unauthorized' });
 
 		const { id, noteId } = event.params;
-		
+		const formData = await event.request.formData();
+		const term = formData.get('term')?.toString();
+		const definition = formData.get('definition')?.toString();
+
+		let tags: string[] = [];
+		try {
+			const parsed = JSON.parse(formData.get('tags')?.toString() || '[]');
+			if (Array.isArray(parsed)) {
+				tags = parsed;
+			} else {
+				return fail(400, { message: 'Tags must be an array' });
+			}
+		} catch (e) {
+			return fail(400, { message: 'Invalid tags format' });
+		}
+
+		// Validation rules for tags
+		if (tags.length > 20) return fail(400, { message: 'Maximum 20 tags allowed' });
+		tags = tags.map((t) => t.trim().toLowerCase());
+		if (tags.some((t) => t.length > 16))
+			return fail(400, { message: 'Tag cannot exceed 16 characters' });
+		if (tags.some((t) => !/^[a-z]+$/.test(t)))
+			return fail(400, { message: 'Tags can only contain alphabetic characters' });
+		tags = Array.from(new Set(tags));
+
+		if (!term || !definition) {
+			return fail(400, { message: 'Title and content are required' });
+		}
+
 		const db = getDb(event.platform?.env?.DB as D1Database);
 
 		// Verify ownership
@@ -79,15 +107,21 @@ export const actions: Actions = {
 		if (cols.length === 0) return fail(403, { message: 'Forbidden' });
 
 		try {
-			await db.delete(flashcard)
+			await db.update(flashcard)
+				.set({
+					term: term.trim(),
+					definition: definition.trim(),
+					tags,
+					updatedAt: new Date()
+				})
 				.where(and(
 					eq(flashcard.id, noteId),
 					eq(flashcard.collectionId, id)
 				));
 		} catch (e) {
-			return fail(500, { message: 'Failed to delete note' });
+			return fail(500, { message: 'Failed to update note' });
 		}
 		
-		throw redirect(302, `/collections/${id}`);
+		throw redirect(302, `/collections/${id}/notes/${noteId}`);
 	}
 };

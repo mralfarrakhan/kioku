@@ -43,7 +43,7 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(302, `/collections/${id}`);
 	}
 
-	// Get user progress for these cards
+	// Get user progress for these cards and notes
 	const progressRecords = await db
 		.select()
 		.from(userFlashcardProgress)
@@ -52,20 +52,38 @@ export const load: PageServerLoad = async (event) => {
 				eq(userFlashcardProgress.userId, event.locals.user.id),
 				inArray(
 					userFlashcardProgress.flashcardId,
-					allCards.map((c) => c.id)
+					allItems.map((c) => c.id)
 				)
 			)
 		);
 
 	const progressMap = new Map(progressRecords.map((p) => [p.flashcardId, p]));
 
-	// 1. Calculate weights for each card
+	// 1. Calculate weights for each flashcard
 	const weightedCards = allCards.map((card) => {
 		const prog = progressMap.get(card.id);
 		let weight = 0;
 
 		if (!prog) {
 			weight = 10000; // Brand new cards have very high weight
+		} else {
+			const isDue = !prog.nextReviewAt || new Date(prog.nextReviewAt) <= new Date();
+			if (isDue) {
+				weight = 5000 + (100 - Math.min(prog.repetitions * 20, 100));
+			} else {
+				weight = Math.max(1, 100 - prog.repetitions * 20);
+			}
+		}
+		return { card, weight, baseWeight: weight };
+	});
+
+	// 2. Calculate weights for each note
+	const weightedNotes = allNotes.map((card) => {
+		const prog = progressMap.get(card.id);
+		let weight = 0;
+
+		if (!prog) {
+			weight = 10000;
 		} else {
 			const isDue = !prog.nextReviewAt || new Date(prog.nextReviewAt) <= new Date();
 			if (isDue) {
@@ -85,10 +103,12 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	let selectedCards: typeof allCards = [];
+	let selectedNotes: typeof allNotes = [];
 
 	if (countParam === 'all') {
 		// "All cards": Shuffle all available items exactly once
 		selectedCards = shuffle([...allCards]);
+		selectedNotes = shuffle([...allNotes]);
 	} else {
 		// N items: Weighted random sample with replacement
 		let lastDrawnId: string | null = null;
@@ -117,6 +137,34 @@ export const load: PageServerLoad = async (event) => {
 
 			selectedCards.push(drawnCard);
 			lastDrawnId = drawnCard.id;
+		}
+
+		if (allNotes.length > 0) {
+			const noteTakeCount = Math.max(1, Math.ceil(takeCount * 0.15));
+			lastDrawnId = null;
+			for (let i = 0; i < noteTakeCount; i++) {
+				let totalWeight = 0;
+				weightedNotes.forEach((wn) => {
+					wn.weight = wn.card.id === lastDrawnId && allNotes.length > 1 ? 0 : wn.baseWeight;
+					totalWeight += wn.weight;
+				});
+
+				let randomValue = Math.random() * totalWeight;
+				let drawnNote = null;
+
+				for (const wn of weightedNotes) {
+					randomValue -= wn.weight;
+					if (randomValue <= 0) {
+						drawnNote = wn.card;
+						break;
+					}
+				}
+
+				if (!drawnNote) drawnNote = weightedNotes[weightedNotes.length - 1].card;
+
+				selectedNotes.push(drawnNote);
+				lastDrawnId = drawnNote.id;
+			}
 		}
 	}
 
@@ -170,10 +218,20 @@ export const load: PageServerLoad = async (event) => {
 		};
 	});
 
+	const noteSession = selectedNotes.map((c) => ({
+		flashcardId: c.id,
+		term: c.term,
+		correctAnswer: c.definition,
+		options: [],
+		type: c.type
+	}));
+
+	const finalQuizSession = shuffle([...quizSession, ...noteSession]);
+
 	return {
 		collection: coll,
-		quiz: quizSession,
-		notes: allNotes.map(n => ({ id: n.id, term: n.term, definition: n.definition, type: n.type }))
+		quiz: finalQuizSession,
+		originalQuizLength: selectedCards.length
 	};
 };
 

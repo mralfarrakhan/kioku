@@ -229,7 +229,7 @@
 	</div>
 
 	<div class="flex items-center gap-3">
-		{#if data.pagination.totalItems >= 4}
+		{#if data.typeCounts.flashcard >= 4}
 			<div class="relative flex items-center gap-2">
 				<a
 					href="/collections/{data.collection.id}/quiz?count=20"
@@ -307,7 +307,7 @@
 					Review Now
 				</div>
 				<p class="text-sm font-medium text-gray-500 dark:text-gray-400">
-					Add {4 - data.pagination.totalItems} more card{data.pagination.totalItems === 3 ? '' : 's'} to unlock.
+					Add {4 - data.typeCounts.flashcard} more flashcard{data.typeCounts.flashcard === 3 ? '' : 's'} to unlock.
 				</p>
 			</div>
 		{/if}
