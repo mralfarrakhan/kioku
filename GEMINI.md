@@ -4,6 +4,12 @@
 - **Package Manager**: bun (STRICTLY use `bun` or `bun run` instead of `npm` or `npx` or `yarn` for all commands)
 - **Add-ons**: prettier, eslint, tailwindcss, sveltekit-adapter, better-auth, mcp, drizzle
 
+## Database Migrations (Drizzle)
+
+- When modifying the database schema (`src/lib/server/db/schema.ts`), ALWAYS use `bun run db:generate` to generate the migration file automatically.
+- Do NOT create custom SQL migration files manually unless absolutely necessary. 
+- If a data migration (like an `UPDATE`) is needed alongside a schema change, first generate the schema migration using `bun run db:generate`, and then manually inject the custom SQL data migration into that newly generated file.
+
 ---
 
 You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:

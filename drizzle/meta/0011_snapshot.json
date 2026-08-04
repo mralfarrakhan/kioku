@@ -1,8 +1,8 @@
 {
-  "id": "4ca94f73-4f3e-4a31-abea-4cb7b7af8521",
-  "prevId": "9c258430-fa02-4477-b6b9-6aff05fe344e",
   "version": "6",
   "dialect": "sqlite",
+  "id": "fca93f0a-82e7-4e5e-a616-cfe4b3e41683",
+  "prevId": "4ca94f73-4f3e-4a31-abea-4cb7b7af8521",
   "tables": {
     "collection": {
       "name": "collection",
@@ -64,15 +64,15 @@
         "collection_user_id_user_id_fk": {
           "name": "collection_user_id_user_id_fk",
           "tableFrom": "collection",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -110,13 +110,13 @@
           "notNull": true,
           "autoincrement": false
         },
-        "is_markdown": {
-          "name": "is_markdown",
-          "type": "integer",
+        "type": {
+          "name": "type",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": false
+          "default": "'flashcard'"
         },
         "tags": {
           "name": "tags",
@@ -147,15 +147,15 @@
         "flashcard_collection_id_collection_id_fk": {
           "name": "flashcard_collection_id_collection_id_fk",
           "tableFrom": "flashcard",
+          "tableTo": "collection",
           "columnsFrom": [
             "collection_id"
           ],
-          "tableTo": "collection",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -337,28 +337,28 @@
         "user_flashcard_progress_user_id_user_id_fk": {
           "name": "user_flashcard_progress_user_id_user_id_fk",
           "tableFrom": "user_flashcard_progress",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "user_flashcard_progress_flashcard_id_flashcard_id_fk": {
           "name": "user_flashcard_progress_flashcard_id_flashcard_id_fk",
           "tableFrom": "user_flashcard_progress",
+          "tableTo": "flashcard",
           "columnsFrom": [
             "flashcard_id"
           ],
-          "tableTo": "flashcard",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -474,15 +474,15 @@
         "account_user_id_user_id_fk": {
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -570,15 +570,15 @@
         "session_user_id_user_id_fk": {
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -721,9 +721,9 @@
   "views": {},
   "enums": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
+    "tables": {},
+    "columns": {}
   },
   "internal": {
     "indexes": {}
