@@ -34,7 +34,22 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	// Get all items
-	const allItems = await db.select().from(flashcard).where(eq(flashcard.collectionId, id));
+	let allItems = await db.select().from(flashcard).where(eq(flashcard.collectionId, id));
+
+	const tagsParam = event.url.searchParams.get('tags');
+	if (tagsParam) {
+		const tagsList = tagsParam
+			.split(',')
+			.map((t) => t.trim())
+			.filter(Boolean);
+		if (tagsList.length > 0) {
+			allItems = allItems.filter((item) => {
+				const itemTags = item.tags || [];
+				return itemTags.some((tag) => tagsList.includes(tag));
+			});
+		}
+	}
+
 	const allCards = allItems.filter((i) => i.type === 'flashcard');
 	const allNotes = allItems.filter((i) => i.type === 'note');
 

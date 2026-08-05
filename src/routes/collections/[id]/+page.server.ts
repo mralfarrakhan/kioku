@@ -200,6 +200,7 @@ export const load: PageServerLoad = async (event) => {
 
 	const d1 = event.platform?.env?.DB as D1Database | undefined;
 	let allUniqueTags: string[] = [];
+	let tagCounts: { tag: string; count: number }[] = [];
 
 	if (d1) {
 		const result = await d1
@@ -209,20 +210,39 @@ export const load: PageServerLoad = async (event) => {
 			.bind(id)
 			.all<{ tag: string }>();
 		allUniqueTags = result.results.map((r) => r.tag).filter(Boolean);
+
+		const resultCounts = await d1
+			.prepare(
+				`SELECT json_each.value as tag, COUNT(*) as count FROM flashcard, json_each(flashcard.tags) WHERE flashcard.collection_id = ? AND flashcard.type = 'flashcard' GROUP BY json_each.value`
+			)
+			.bind(id)
+			.all<{ tag: string; count: number }>();
+		tagCounts = resultCounts.results;
 	} else {
 		// Fallback for environment without D1 bound (e.g. some dev setups)
 		const allTagsResult = await db
-			.select({ tags: flashcard.tags })
+			.select({ tags: flashcard.tags, type: flashcard.type })
 			.from(flashcard)
 			.where(eq(flashcard.collectionId, id));
 
 		allUniqueTags = Array.from(new Set(allTagsResult.flatMap((c) => c.tags || [])));
+		
+		const countsMap = new Map<string, number>();
+		for (const card of allTagsResult) {
+			if (card.type === 'flashcard') {
+				for (const tag of card.tags || []) {
+					countsMap.set(tag, (countsMap.get(tag) || 0) + 1);
+				}
+			}
+		}
+		tagCounts = Array.from(countsMap.entries()).map(([tag, count]) => ({ tag, count }));
 	}
 
 	return {
 		collection: coll,
 		flashcards,
 		allUniqueTags,
+		tagCounts,
 		typeCounts,
 		pagination: {
 			page,

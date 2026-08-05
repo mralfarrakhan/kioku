@@ -257,7 +257,7 @@
 {/if}
 
 <PremiumFeatureModal bind:this={premiumModal} />
-<AdvancedQuizModal bind:this={advancedQuizModal} collectionId={data.collection.id} />
+<AdvancedQuizModal bind:this={advancedQuizModal} collectionId={data.collection.id} tagCounts={data.tagCounts} />
 
 <div
 	class="mb-8 flex flex-col justify-between gap-4 rounded-2xl border-2 border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center dark:border-gray-800 dark:bg-gray-800"

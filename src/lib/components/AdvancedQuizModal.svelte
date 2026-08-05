@@ -1,12 +1,17 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
-	let { collectionId } = $props<{ collectionId: string }>();
+	let { collectionId, tagCounts = [] } = $props<{
+		collectionId: string;
+		tagCounts?: { tag: string; count: number }[];
+	}>();
 
 	let dialog: HTMLDialogElement | undefined = $state();
 	let sessionLength = $state<'10' | '20' | '50' | 'all'>('20');
+	let selectedTags = $state<string[]>([]);
 
 	export function showModal() {
+		selectedTags = []; // Reset on open
 		dialog?.showModal();
 	}
 
@@ -16,7 +21,11 @@
 
 	function handleStart() {
 		close();
-		goto(`/collections/${collectionId}/quiz?count=${sessionLength}`);
+		let url = `/collections/${collectionId}/quiz?count=${sessionLength}`;
+		if (selectedTags.length > 0) {
+			url += `&tags=${encodeURIComponent(selectedTags.join(','))}`;
+		}
+		goto(url);
 	}
 </script>
 
@@ -68,6 +77,50 @@
 			</div>
 
 			<!-- Future options can easily be added here -->
+			{#if tagCounts.length > 0}
+				<div>
+					<label class="mb-3 block text-sm font-bold text-gray-700 dark:text-gray-300">
+						Filter by Tags <span class="font-normal text-gray-500">(Optional)</span>
+					</label>
+					<div
+						class="max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/50"
+					>
+						<div class="flex flex-col gap-2">
+							{#each tagCounts as { tag, count }}
+								<label
+									class="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors {count <
+									4
+										? 'cursor-not-allowed opacity-50'
+										: 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800'}"
+								>
+									<input
+										type="checkbox"
+										value={tag}
+										bind:group={selectedTags}
+										disabled={count < 4}
+										class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:focus:ring-blue-600"
+									/>
+									<span class="flex-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+										{tag}
+									</span>
+									<span class="text-xs font-bold text-gray-500 dark:text-gray-400">
+										({count})
+									</span>
+								</label>
+							{/each}
+						</div>
+					</div>
+					{#if selectedTags.length === 0}
+						<p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+							No tags selected. The quiz will include all cards.
+						</p>
+					{:else}
+						<p class="mt-2 text-xs text-blue-600 dark:text-blue-400">
+							{selectedTags.length} tag(s) selected. Cards matching ANY selected tag will be included.
+						</p>
+					{/if}
+				</div>
+			{/if}
 		</div>
 
 		<div class="flex justify-end gap-3">
