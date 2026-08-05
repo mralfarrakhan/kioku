@@ -286,11 +286,11 @@ export const actions: Actions = {
 
 		// Validation rules for tags
 		if (tags.length > 20) return fail(400, { message: 'Maximum 20 tags allowed' });
-		tags = tags.map((t) => t.trim().toLowerCase());
+		tags = tags.map((t) => t.replace(/\s+/g, ' ').trim().toLowerCase());
 		if (tags.some((t) => t.length > 16))
 			return fail(400, { message: 'Tag cannot exceed 16 characters' });
-		if (tags.some((t) => !/^[a-z]+$/.test(t)))
-			return fail(400, { message: 'Tags can only contain alphabetic characters' });
+		if (tags.some((t) => !/^[a-z0-9. ]+$/.test(t)))
+			return fail(400, { message: 'Tags can only contain lowercase letters, numbers, dots, and spaces' });
 		tags = Array.from(new Set(tags));
 
 		if (!term || !definition) {
@@ -361,11 +361,11 @@ export const actions: Actions = {
 
 		// Validation rules for tags
 		if (tags.length > 20) return fail(400, { message: 'Maximum 20 tags allowed' });
-		tags = tags.map((t) => t.trim().toLowerCase());
+		tags = tags.map((t) => t.replace(/\s+/g, ' ').trim().toLowerCase());
 		if (tags.some((t) => t.length > 16))
 			return fail(400, { message: 'Tag cannot exceed 16 characters' });
-		if (tags.some((t) => !/^[a-z]+$/.test(t)))
-			return fail(400, { message: 'Tags can only contain alphabetic characters' });
+		if (tags.some((t) => !/^[a-z0-9. ]+$/.test(t)))
+			return fail(400, { message: 'Tags can only contain lowercase letters, numbers, dots, and spaces' });
 		tags = Array.from(new Set(tags));
 
 		if (!flashcardId || !term || !definition) return fail(400, { message: 'Missing fields' });

@@ -17,7 +17,7 @@
 	);
 
 	function addTag(tag: string) {
-		const t = tag.trim().toLowerCase();
+		const t = tag.replace(/\s+/g, ' ').trim().toLowerCase();
 		if (!t) return;
 
 		if (tags.length >= 20) {
@@ -28,8 +28,8 @@
 			toast.error('Tag cannot exceed 16 characters');
 			return;
 		}
-		if (!/^[a-z]+$/.test(t)) {
-			toast.error('Tags can only contain alphabetic characters');
+		if (!/^[a-z0-9. ]+$/.test(t)) {
+			toast.error('Tags can only contain lowercase letters, numbers, dots, and spaces');
 			return;
 		}
 
@@ -46,6 +46,9 @@
 
 	function onKeyDown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
+			e.preventDefault();
+			addTag(inputValue);
+		} else if (e.key === ',') {
 			e.preventDefault();
 			addTag(inputValue);
 		} else if (e.key === 'Backspace' && inputValue === '' && tags.length > 0) {
@@ -65,7 +68,7 @@
 		{/each}
 		<input
 			type="text"
-			placeholder={tags.length === 0 ? 'Add tags (press Enter)...' : ''}
+			placeholder={tags.length === 0 ? 'Add tags (comma or Enter to add)...' : ''}
 			bind:value={inputValue}
 			onkeydown={onKeyDown}
 			onfocus={() => (showSuggestions = true)}
