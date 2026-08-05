@@ -9,6 +9,7 @@
 	import Tag from '$lib/components/Tag.svelte';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import PremiumFeatureModal from '$lib/components/PremiumFeatureModal.svelte';
+	import AdvancedQuizModal from '$lib/components/AdvancedQuizModal.svelte';
 
 	let { data }: { data: PageServerData } = $props();
 
@@ -16,9 +17,9 @@
 	let uniqueTags = $derived(data.allUniqueTags || []);
 
 	let showEditCollection = $state(false);
-	let showQuizOptions = $state(false);
 
 	let premiumModal: ReturnType<typeof PremiumFeatureModal> | undefined = $state();
+	let advancedQuizModal: ReturnType<typeof AdvancedQuizModal> | undefined = $state();
 
 	let searchParams = $derived(page.url.searchParams);
 	let searchQuery = $state(page.url.searchParams.get('q') || '');
@@ -256,6 +257,7 @@
 {/if}
 
 <PremiumFeatureModal bind:this={premiumModal} />
+<AdvancedQuizModal bind:this={advancedQuizModal} collectionId={data.collection.id} />
 
 <div
 	class="mb-8 flex flex-col justify-between gap-4 rounded-2xl border-2 border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center dark:border-gray-800 dark:bg-gray-800"
@@ -277,9 +279,9 @@
 					Review Now
 				</a>
 				<button
-					onclick={() => (showQuizOptions = !showQuizOptions)}
+					onclick={() => advancedQuizModal?.showModal()}
 					class="inline-flex h-[48px] w-[48px] items-center justify-center rounded-xl border-2 border-gray-200 bg-white font-extrabold text-gray-400 shadow-[0_4px_0_0_rgba(229,231,235,1)] transition hover:-translate-y-1 hover:border-gray-300 hover:text-gray-500 hover:shadow-[0_6px_0_0_rgba(229,231,235,1)] active:translate-y-1 active:shadow-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-500 dark:shadow-[0_4px_0_0_rgba(31,41,55,1)] dark:hover:border-gray-600 dark:hover:text-gray-400 dark:hover:shadow-[0_6px_0_0_rgba(31,41,55,1)]"
-					aria-label="Session Length Options"
+					aria-label="Advanced Quiz Options"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -288,55 +290,16 @@
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
-						stroke-width="3"
+						stroke-width="2"
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle
-							cx="12"
-							cy="19"
-							r="1"
-						/></svg
+						class="lucide lucide-settings"
 					>
+						<path
+							d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+						/><circle cx="12" cy="12" r="3" />
+					</svg>
 				</button>
-				<!-- Simple extra options dropdown on click -->
-				{#if showQuizOptions}
-					<!-- Invisible overlay to handle click outside -->
-					<button
-						type="button"
-						class="fixed inset-0 z-10 h-full w-full cursor-default bg-transparent outline-none"
-						onclick={() => (showQuizOptions = false)}
-						aria-label="Close options"
-					></button>
-					<div
-						class="absolute top-full right-0 z-20 mt-3 w-48 rounded-xl border border-gray-100 bg-white p-2 shadow-xl dark:border-gray-700 dark:bg-gray-800"
-					>
-						<div
-							class="px-3 py-2 text-xs font-bold tracking-wider text-gray-400 uppercase dark:text-gray-500"
-						>
-							Session Length
-						</div>
-						<a
-							href="/collections/{data.collection.id}/quiz?count=10"
-							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
-							>10 cards</a
-						>
-						<a
-							href="/collections/{data.collection.id}/quiz?count=20"
-							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
-							>20 cards (Default)</a
-						>
-						<a
-							href="/collections/{data.collection.id}/quiz?count=50"
-							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
-							>50 cards</a
-						>
-						<a
-							href="/collections/{data.collection.id}/quiz?count=all"
-							class="block rounded-lg px-3 py-2 font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
-							>All cards</a
-						>
-					</div>
-				{/if}
 			</div>
 		{:else}
 			<div class="flex items-center gap-3">
