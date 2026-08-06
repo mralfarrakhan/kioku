@@ -479,11 +479,18 @@ export const actions: Actions = {
 		
 		// Fetch existing terms for duplicates check
 		const existingCards = await db
-			.select({ term: flashcard.term })
+			.select({ term: flashcard.term, tags: flashcard.tags })
 			.from(flashcard)
 			.where(eq(flashcard.collectionId, collectionId));
 			
 		const existingTermsSet = new Set(existingCards.map(c => c.term.trim().toLowerCase()));
+		
+		const existingTagsSet = new Set<string>();
+		existingCards.forEach(c => {
+			if (c.tags) {
+				c.tags.forEach(t => existingTagsSet.add(t));
+			}
+		});
 		
 		const skippedTerms: string[] = [];
 		const errors: { row: number; message: string }[] = [];
@@ -550,12 +557,24 @@ export const actions: Actions = {
 			}
 		}
 		
+		const newTags: string[] = [];
+		const existingTags: string[] = [];
+		
+		uniqueTagsSet.forEach(t => {
+			if (existingTagsSet.has(t)) {
+				existingTags.push(t);
+			} else {
+				newTags.push(t);
+			}
+		});
+		
 		return {
 			success: true,
 			validCount: validRows.length,
 			skippedTerms,
 			errors,
-			uniqueTags: Array.from(uniqueTagsSet),
+			newTags,
+			existingTags,
 			validRows
 		};
 	},

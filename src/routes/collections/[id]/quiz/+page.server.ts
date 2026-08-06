@@ -60,18 +60,26 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	// Get user progress for these cards and notes
-	const progressRecords = await db
-		.select()
-		.from(userFlashcardProgress)
-		.where(
-			and(
-				eq(userFlashcardProgress.userId, event.locals.user.id),
-				inArray(
-					userFlashcardProgress.flashcardId,
-					allItems.map((c) => c.id)
-				)
-			)
-		);
+	// Chunk the query to avoid Cloudflare D1's 100 parameter limit per statement
+	const progressRecords = [];
+	const allItemIds = allItems.map((c) => c.id);
+	const chunkSize = 90; // safely under 100
+	
+	for (let i = 0; i < allItemIds.length; i += chunkSize) {
+		const chunk = allItemIds.slice(i, i + chunkSize);
+		if (chunk.length > 0) {
+			const records = await db
+				.select()
+				.from(userFlashcardProgress)
+				.where(
+					and(
+						eq(userFlashcardProgress.userId, event.locals.user.id),
+						inArray(userFlashcardProgress.flashcardId, chunk)
+					)
+				);
+			progressRecords.push(...records);
+		}
+	}
 
 	const progressMap = new Map(progressRecords.map((p) => [p.flashcardId, p]));
 

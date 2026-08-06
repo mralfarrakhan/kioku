@@ -16,7 +16,8 @@
 	let validRows: any[] = $state([]);
 	let skippedTerms: string[] = $state([]);
 	let errors: { row: number; message: string }[] = $state([]);
-	let uniqueTags: string[] = $state([]);
+	let newTags: string[] = $state([]);
+	let existingTags: string[] = $state([]);
 
 	let errorMsg: string | null = $state(null);
 	let validateFormBtn: HTMLButtonElement | undefined = $state();
@@ -40,7 +41,8 @@
 		validRows = [];
 		skippedTerms = [];
 		errors = [];
-		uniqueTags = [];
+		newTags = [];
+		existingTags = [];
 	}
 
 	function handleFileSelect(event: Event) {
@@ -98,7 +100,8 @@
 				validRowsJson = JSON.stringify(validRows);
 				skippedTerms = (result.data.skippedTerms as string[]) || [];
 				errors = (result.data.errors as any[]) || [];
-				uniqueTags = (result.data.uniqueTags as string[]) || [];
+				newTags = (result.data.newTags as string[]) || [];
+				existingTags = (result.data.existingTags as string[]) || [];
 				step = 'summary';
 			} else if (result.type === 'failure') {
 				errorMsg = (result.data?.message as string) || 'Validation failed.';
@@ -236,7 +239,7 @@
 					</div>
 					<div class="rounded-xl bg-blue-50 p-3 dark:bg-blue-900/20">
 						<div class="text-2xl font-black text-blue-600 dark:text-blue-400">
-							{uniqueTags.length}
+							{newTags.length + existingTags.length}
 						</div>
 						<div class="text-xs font-bold tracking-wide uppercase text-blue-700 dark:text-blue-500">
 							Tags
@@ -273,13 +276,20 @@
 						</div>
 					{/if}
 
-					{#if uniqueTags.length > 0}
+					{#if newTags.length > 0 || existingTags.length > 0}
 						<div>
-							<h3 class="mb-2 font-bold text-blue-600 dark:text-blue-400">New Tags Found ({uniqueTags.length})</h3>
+							<h3 class="mb-2 font-bold text-blue-600 dark:text-blue-400">Tags Found ({newTags.length + existingTags.length})</h3>
 							<div class="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
 								<div class="flex flex-wrap gap-1.5">
-									{#each uniqueTags as tag}
-										<span class="rounded bg-blue-200/50 px-2 py-1 text-xs font-semibold text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">{tag}</span>
+									{#each newTags as tag}
+										<span title="This is a brand new tag" class="rounded bg-blue-500 px-2 py-1 text-xs font-semibold text-white shadow-sm dark:bg-blue-600">
+											{tag} <span class="ml-0.5 uppercase tracking-wider text-[10px] opacity-75">(New)</span>
+										</span>
+									{/each}
+									{#each existingTags as tag}
+										<span title="This tag already exists in the collection" class="rounded bg-gray-200/70 px-2 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+											{tag}
+										</span>
 									{/each}
 								</div>
 							</div>
