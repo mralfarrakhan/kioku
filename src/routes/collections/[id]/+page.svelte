@@ -10,6 +10,7 @@
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import PremiumFeatureModal from '$lib/components/PremiumFeatureModal.svelte';
 	import AdvancedQuizModal from '$lib/components/AdvancedQuizModal.svelte';
+	import CsvImportModal from '$lib/components/CsvImportModal.svelte';
 
 	let { data }: { data: PageServerData } = $props();
 
@@ -17,9 +18,11 @@
 	let uniqueTags = $derived(data.allUniqueTags || []);
 
 	let showEditCollection = $state(false);
+	let showAdvancedOptions = $state(false);
 
 	let premiumModal: ReturnType<typeof PremiumFeatureModal> | undefined = $state();
 	let advancedQuizModal: ReturnType<typeof AdvancedQuizModal> | undefined = $state();
+	let csvImportModal: ReturnType<typeof CsvImportModal> | undefined = $state();
 
 	let searchParams = $derived(page.url.searchParams);
 	let searchQuery = $state(page.url.searchParams.get('q') || '');
@@ -143,6 +146,50 @@
 			>
 				Edit Info
 			</button>
+			{#if isOwner}
+				<div class="relative inline-block text-left">
+					<button
+						type="button"
+						onclick={() => (showAdvancedOptions = !showAdvancedOptions)}
+						title="Advanced Options"
+						class="flex h-11 w-11 items-center justify-center rounded-xl border-2 transition border-gray-200 bg-transparent text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-800"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path
+								d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+							/><circle cx="12" cy="12" r="3" />
+						</svg>
+					</button>
+					{#if showAdvancedOptions}
+						<div
+							class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-xl bg-white shadow-lg ring-1 ring-black/5 focus:outline-none dark:bg-gray-800 dark:ring-white/10"
+						>
+							<div class="py-1" role="none">
+								<button
+									type="button"
+									onclick={() => {
+										showAdvancedOptions = false;
+										csvImportModal?.showModal();
+									}}
+									class="block w-full px-4 py-2 text-left text-sm font-bold text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
+								>
+									Import CSV
+								</button>
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
 		</div>
 	</div>
 </div>
@@ -258,6 +305,7 @@
 
 <PremiumFeatureModal bind:this={premiumModal} />
 <AdvancedQuizModal bind:this={advancedQuizModal} collectionId={data.collection.id} tagCounts={data.tagCounts} />
+<CsvImportModal bind:this={csvImportModal} />
 
 <div
 	class="mb-8 flex flex-col justify-between gap-4 rounded-2xl border-2 border-gray-200 bg-white p-6 shadow-sm md:flex-row md:items-center dark:border-gray-800 dark:bg-gray-800"

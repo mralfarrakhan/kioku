@@ -51,7 +51,8 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	const allCards = allItems.filter((i) => i.type === 'flashcard');
-	const allNotes = allItems.filter((i) => i.type === 'note');
+	const excludeNotes = event.url.searchParams.get('excludeNotes') === 'true';
+	const allNotes = excludeNotes ? [] : allItems.filter((i) => i.type === 'note');
 
 	if (allCards.length < 4) {
 		// Can't play quiz if < 4 flashcards

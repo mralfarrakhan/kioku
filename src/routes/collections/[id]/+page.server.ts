@@ -454,5 +454,160 @@ export const actions: Actions = {
 		} catch (e) {
 			return fail(500, { message: 'Failed to delete flashcard' });
 		}
+	},
+
+	validateCsv: async (event) => {
+		const user = event.locals.user;
+		if (!user) return fail(401, { message: 'Unauthorized' });
+		const collectionId = event.params.id;
+		
+		const formData = await event.request.formData();
+		const rowsStr = formData.get('rows')?.toString() || '[]';
+		
+		let parsedRows: any[] = [];
+		try {
+			parsedRows = JSON.parse(rowsStr);
+		} catch(e) {
+			return fail(400, { message: 'Invalid JSON data' });
+		}
+		
+		if (!Array.isArray(parsedRows) || parsedRows.length === 0) {
+			return fail(400, { message: 'No rows provided' });
+		}
+
+		const db = getDb(event.platform?.env?.DB as D1Database);
+		
+		// Fetch existing terms for duplicates check
+		const existingCards = await db
+			.select({ term: flashcard.term })
+			.from(flashcard)
+			.where(eq(flashcard.collectionId, collectionId));
+			
+		const existingTermsSet = new Set(existingCards.map(c => c.term.trim().toLowerCase()));
+		
+		const skippedTerms: string[] = [];
+		const errors: { row: number; message: string }[] = [];
+		const uniqueTagsSet = new Set<string>();
+		const validRows: any[] = [];
+		const seenCsvTerms = new Set<string>(); // to prevent duplicates within the CSV itself
+		
+		for (let i = 0; i < parsedRows.length; i++) {
+			const row = parsedRows[i];
+			const rowNumber = i + 2; // +1 for 1-index, +1 because CSV has a header row
+			
+			const term = row.term?.toString().trim();
+			const definition = row.definition?.toString().trim();
+			
+			if (!term || term === '') {
+				errors.push({ row: rowNumber, message: 'Missing term' });
+				continue;
+			}
+			
+			if (!definition || definition === '') {
+				errors.push({ row: rowNumber, message: 'Missing definition' });
+				continue;
+			}
+			
+			const lowerTerm = term.toLowerCase();
+			
+			if (existingTermsSet.has(lowerTerm) || seenCsvTerms.has(lowerTerm)) {
+				skippedTerms.push(term);
+			} else {
+				// Validate tags
+				let parsedTags: string[] = [];
+				let tagError = null;
+				
+				if (row.tags && typeof row.tags === 'string') {
+					parsedTags = row.tags
+						.split(',')
+						.map((t: string) => t.replace(/\s+/g, ' ').trim().toLowerCase())
+						.filter(Boolean);
+						
+					if (parsedTags.length > 20) {
+						tagError = 'Maximum 20 tags allowed';
+					} else if (parsedTags.some((t) => t.length > 16)) {
+						tagError = 'A tag exceeds 16 characters';
+					} else if (parsedTags.some((t) => !/^[a-z0-9. ]+$/.test(t))) {
+						tagError = 'Tags can only contain lowercase letters, numbers, dots, and spaces';
+					}
+					
+					if (tagError) {
+						errors.push({ row: rowNumber, message: tagError });
+						continue; // Skip this row due to tag error
+					}
+					
+					parsedTags = Array.from(new Set(parsedTags));
+					parsedTags.forEach(t => uniqueTagsSet.add(t));
+				}
+				
+				seenCsvTerms.add(lowerTerm);
+				
+				validRows.push({
+					term,
+					definition,
+					tags: parsedTags
+				});
+			}
+		}
+		
+		return {
+			success: true,
+			validCount: validRows.length,
+			skippedTerms,
+			errors,
+			uniqueTags: Array.from(uniqueTagsSet),
+			validRows
+		};
+	},
+
+	importCsv: async (event) => {
+		const user = event.locals.user;
+		if (!user) return fail(401, { message: 'Unauthorized' });
+		const collectionId = event.params.id;
+		
+		const formData = await event.request.formData();
+		const rowsStr = formData.get('validRows')?.toString() || '[]';
+		
+		let validRows: any[] = [];
+		try {
+			validRows = JSON.parse(rowsStr);
+		} catch(e) {
+			return fail(400, { message: 'Invalid JSON data' });
+		}
+		
+		if (!Array.isArray(validRows) || validRows.length === 0) {
+			return fail(400, { message: 'No valid rows to import' });
+		}
+
+		const db = getDb(event.platform?.env?.DB as D1Database);
+		
+		// Verify ownership
+		const cols = await db
+			.select()
+			.from(collection)
+			.where(and(eq(collection.id, collectionId), eq(collection.userId, user.id)));
+		if (cols.length === 0) return fail(403, { message: 'Forbidden' });
+		
+		// Batch insert to avoid D1 parameter limits (max 100 params usually, 5 params per row -> max 20 rows per batch)
+		const batchSize = 15;
+		
+		try {
+			for (let i = 0; i < validRows.length; i += batchSize) {
+				const batch = validRows.slice(i, i + batchSize).map(row => ({
+					collectionId,
+					term: row.term,
+					definition: row.definition,
+					type: 'flashcard' as const,
+					tags: row.tags || []
+				}));
+				
+				if (batch.length > 0) {
+					await db.insert(flashcard).values(batch);
+				}
+			}
+			return { success: true };
+		} catch (e) {
+			return fail(500, { message: 'Failed to import flashcards' });
+		}
 	}
 };
