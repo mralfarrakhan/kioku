@@ -588,8 +588,10 @@ export const actions: Actions = {
 			.where(and(eq(collection.id, collectionId), eq(collection.userId, user.id)));
 		if (cols.length === 0) return fail(403, { message: 'Forbidden' });
 		
-		// Batch insert to avoid D1 parameter limits (max 100 params usually, 5 params per row -> max 20 rows per batch)
-		const batchSize = 15;
+		// Batch insert to avoid D1 parameter limits
+		// D1 max params = 100. Each flashcard insert resolves to 8 parameters (including id, createdAt, updatedAt from Drizzle)
+		// Max batch size = 100 / 8 = 12.5. We use 10 for safety.
+		const batchSize = 10;
 		
 		try {
 			for (let i = 0; i < validRows.length; i += batchSize) {
@@ -607,6 +609,7 @@ export const actions: Actions = {
 			}
 			return { success: true };
 		} catch (e) {
+			console.error('importCsv Error:', e);
 			return fail(500, { message: 'Failed to import flashcards' });
 		}
 	}
