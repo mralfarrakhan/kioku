@@ -52,6 +52,7 @@ export const load: PageServerLoad = async (event) => {
 
 	const allCards = allItems.filter((i) => i.type === 'flashcard');
 	const excludeNotes = event.url.searchParams.get('excludeNotes') === 'true';
+	const isRandomMode = event.url.searchParams.get('mode') === 'random';
 	const allNotes = excludeNotes ? [] : allItems.filter((i) => i.type === 'note');
 
 	if (allCards.length < 4) {
@@ -88,7 +89,9 @@ export const load: PageServerLoad = async (event) => {
 		const prog = progressMap.get(card.id);
 		let weight = 0;
 
-		if (!prog) {
+		if (isRandomMode) {
+			weight = 100;
+		} else if (!prog) {
 			weight = 10000; // Brand new cards have very high weight
 		} else {
 			const isDue = !prog.nextReviewAt || new Date(prog.nextReviewAt) <= new Date();
@@ -106,7 +109,9 @@ export const load: PageServerLoad = async (event) => {
 		const prog = progressMap.get(card.id);
 		let weight = 0;
 
-		if (!prog) {
+		if (isRandomMode) {
+			weight = 100;
+		} else if (!prog) {
 			weight = 10000;
 		} else {
 			const isDue = !prog.nextReviewAt || new Date(prog.nextReviewAt) <= new Date();

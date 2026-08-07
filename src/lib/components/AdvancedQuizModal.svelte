@@ -10,10 +10,12 @@
 	let sessionLength = $state<'10' | '20' | '50' | 'all'>('20');
 	let selectedTags = $state<string[]>([]);
 	let includeNotes = $state(true);
+	let fullRandomMode = $state(false);
 
 	export function showModal() {
 		selectedTags = []; // Reset on open
 		includeNotes = true;
+		fullRandomMode = false;
 		dialog?.showModal();
 	}
 
@@ -29,6 +31,9 @@
 		}
 		if (!includeNotes) {
 			url += `&excludeNotes=true`;
+		}
+		if (fullRandomMode) {
+			url += `&mode=random`;
 		}
 		goto(url);
 	}
@@ -141,6 +146,25 @@
 						</span>
 						<span class="block text-xs text-gray-500 dark:text-gray-400">
 							Approximately 15% of the quiz will consist of your notes.
+						</span>
+					</div>
+				</label>
+			</div>
+
+			<!-- Full Random Mode Section -->
+			<div>
+				<label class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900/50 dark:hover:bg-gray-800">
+					<input
+						type="checkbox"
+						bind:checked={fullRandomMode}
+						class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:focus:ring-blue-600"
+					/>
+					<div class="flex-1">
+						<span class="block text-sm font-bold text-gray-700 dark:text-gray-300">
+							Enable Full Random Mode
+						</span>
+						<span class="block text-xs text-gray-500 dark:text-gray-400">
+							Ignore spaced repetition (SRS) and pick cards completely at random. Great for exam prep.
 						</span>
 					</div>
 				</label>
