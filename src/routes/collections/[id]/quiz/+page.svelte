@@ -336,20 +336,24 @@
 				</div>
 
 				<!-- Status indicator area -->
-				<div class="mt-8 flex h-20 items-center justify-center">
-					{#if isCorrect !== null}
-						<div class="flex items-center gap-6">
+				{#if isCorrect !== null}
+					<!-- Background overlay for mobile to draw attention to the bottom sheet -->
+					<div class="fixed inset-0 z-40 bg-gray-900/20 backdrop-blur-[2px] transition-opacity dark:bg-gray-950/40 sm:hidden"></div>
+					
+					<div class="fixed inset-x-0 bottom-0 z-50 flex min-h-[140px] animate-slide-up-sheet flex-col items-center justify-center rounded-t-3xl border-t-4 bg-white px-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:bg-gray-900 {isCorrect ? 'border-green-500' : 'border-red-500'} sm:relative sm:inset-auto sm:z-auto sm:min-h-0 sm:mt-8 sm:h-20 sm:animate-none sm:flex-row sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:shadow-none sm:dark:bg-transparent">
+						<div class="flex w-full max-w-sm flex-col items-center justify-between gap-4 sm:max-w-none sm:flex-row sm:justify-center sm:gap-6">
 							{#if currentCard.type !== 'note'}
 								<div
-									class="flex items-center gap-2 text-xl font-extrabold {isCorrect
+									class="flex items-center gap-2 text-2xl font-extrabold sm:text-xl {isCorrect
 										? 'animate-bounce text-green-500'
 										: 'text-red-500'}"
 								>
 									{#if isCorrect}
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
-											width="28"
-											height="28"
+											width="32"
+											height="32"
+											class="sm:h-7 sm:w-7"
 											viewBox="0 0 24 24"
 											fill="none"
 											stroke="currentColor"
@@ -364,8 +368,9 @@
 									{:else}
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
-											width="28"
-											height="28"
+											width="32"
+											height="32"
+											class="sm:h-7 sm:w-7"
 											viewBox="0 0 24 24"
 											fill="none"
 											stroke="currentColor"
@@ -384,9 +389,9 @@
 
 							{#if oldScore !== null}
 								<div
-									class="animate-fade-in flex items-center gap-3 border-l-2 border-gray-100 pl-6 dark:border-gray-800"
+									class="animate-fade-in flex items-center gap-4 rounded-2xl bg-gray-50 px-4 py-2 dark:bg-gray-800/50 sm:gap-3 sm:rounded-none sm:border-l-2 sm:border-gray-100 sm:bg-transparent sm:px-0 sm:pl-6 sm:py-0 sm:dark:border-gray-800 sm:dark:bg-transparent"
 								>
-									<div class="relative flex h-14 w-14 items-center justify-center">
+									<div class="relative flex h-16 w-16 items-center justify-center sm:h-14 sm:w-14">
 										<svg
 											class="absolute inset-0 h-full w-full -rotate-90 transform"
 											viewBox="0 0 36 36"
@@ -396,7 +401,7 @@
 												cy="18"
 												r="15"
 												fill="none"
-												class="stroke-gray-100 dark:stroke-gray-800"
+												class="stroke-gray-200 dark:stroke-gray-700 sm:stroke-gray-100 sm:dark:stroke-gray-800"
 												stroke-width="4"
 											></circle>
 											<circle
@@ -416,13 +421,13 @@
 												style="transition: {ringTransition};"
 											></circle>
 										</svg>
-										<span class="relative text-xs font-bold text-gray-700 dark:text-gray-300">
+										<span class="relative text-sm font-bold text-gray-700 dark:text-gray-300 sm:text-xs">
 											Lv.{displayLevel}
 										</span>
 									</div>
 									{#if fluencyChange !== null}
 										<span
-											class="text-lg font-extrabold {fluencyChange > 0
+											class="text-xl font-extrabold sm:text-lg {fluencyChange > 0
 												? 'text-green-500'
 												: 'text-red-500'} animate-slide-up"
 										>
@@ -432,8 +437,8 @@
 								</div>
 							{/if}
 						</div>
-					{/if}
-				</div>
+					</div>
+				{/if}
 			{/if}
 		{:else}
 			<div class="animate-fade-in flex h-full flex-col items-center justify-center text-center">
@@ -520,5 +525,17 @@
 	}
 	.animate-slide-up {
 		animation: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+	}
+
+	@keyframes slide-up-sheet {
+		0% {
+			transform: translateY(100%);
+		}
+		100% {
+			transform: translateY(0);
+		}
+	}
+	.animate-slide-up-sheet {
+		animation: slide-up-sheet 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 	}
 </style>
