@@ -12,8 +12,11 @@
 
 	let parsedRowsJson = $state('[]');
 	let validRowsJson = $state('[]');
+	let updateRowsJson = $state('[]');
 
 	let validRows: any[] = $state([]);
+	let updateRows: any[] = $state([]);
+	let isUpdate = $state(false);
 	let skippedTerms: string[] = $state([]);
 	let errors: { row: number; message: string }[] = $state([]);
 	let newTags: string[] = $state([]);
@@ -38,7 +41,10 @@
 		errorMsg = null;
 		parsedRowsJson = '[]';
 		validRowsJson = '[]';
+		updateRowsJson = '[]';
 		validRows = [];
+		updateRows = [];
+		isUpdate = false;
 		skippedTerms = [];
 		errors = [];
 		newTags = [];
@@ -98,6 +104,8 @@
 			if (result.type === 'success' && result.data) {
 				validRows = (result.data.validRows as any[]) || [];
 				validRowsJson = JSON.stringify(validRows);
+				updateRows = (result.data.updateRows as any[]) || [];
+				updateRowsJson = JSON.stringify(updateRows);
 				skippedTerms = (result.data.skippedTerms as string[]) || [];
 				errors = (result.data.errors as any[]) || [];
 				newTags = (result.data.newTags as string[]) || [];
@@ -187,6 +195,18 @@
 				{/if}
 			</div>
 
+			<div class="mb-6 flex items-center justify-center gap-2">
+				<input
+					type="checkbox"
+					id="update-flag"
+					bind:checked={isUpdate}
+					class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+				/>
+				<label for="update-flag" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+					Update existing terms instead of skipping duplicates
+				</label>
+			</div>
+
 			<div class="flex justify-end gap-3">
 				<button
 					type="button"
@@ -221,6 +241,16 @@
 							Valid
 						</div>
 					</div>
+					{#if isUpdate}
+					<div class="rounded-xl bg-yellow-50 p-3 dark:bg-yellow-900/20">
+						<div class="text-2xl font-black text-yellow-600 dark:text-yellow-400">
+							{updateRows.length}
+						</div>
+						<div class="text-xs font-bold tracking-wide uppercase text-yellow-700 dark:text-yellow-500">
+							Updates
+						</div>
+					</div>
+					{:else}
 					<div class="rounded-xl bg-yellow-50 p-3 dark:bg-yellow-900/20">
 						<div class="text-2xl font-black text-yellow-600 dark:text-yellow-400">
 							{skippedTerms.length}
@@ -229,6 +259,7 @@
 							Skipped
 						</div>
 					</div>
+					{/if}
 					<div class="rounded-xl bg-red-50 p-3 dark:bg-red-900/20">
 						<div class="text-2xl font-black text-red-600 dark:text-red-400">
 							{errors.length}
@@ -276,6 +307,39 @@
 						</div>
 					{/if}
 
+					{#if updateRows.length > 0}
+						<div>
+							<h3 class="mb-2 font-bold text-yellow-600 dark:text-yellow-400">To Update ({updateRows.length})</h3>
+							<div class="rounded-xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/30 dark:bg-yellow-900/10">
+								<ul class="flex max-h-40 flex-col gap-2 overflow-y-auto text-sm text-yellow-800 dark:text-yellow-300">
+									{#each updateRows as row}
+										<li class="border-b border-yellow-200/50 pb-2 last:border-0 dark:border-yellow-900/30">
+											<div class="mb-1">
+												<span class="font-bold">{row.term}</span> - 
+												{#if row.oldDefinition && row.oldDefinition !== row.definition}
+													<span class="truncate opacity-50 line-through mr-1">{row.oldDefinition}</span>
+													<span class="truncate font-medium text-green-700 dark:text-green-400">{row.definition}</span>
+												{:else}
+													<span class="truncate opacity-75">{row.definition}</span>
+												{/if}
+											</div>
+											{#if row.addedTags?.length > 0 || row.removedTags?.length > 0}
+												<div class="mt-1 flex flex-wrap gap-1">
+													{#each row.addedTags || [] as tag}
+														<span class="rounded bg-green-200/50 px-1.5 py-0.5 text-[10px] font-bold text-green-800 dark:bg-green-900/40 dark:text-green-300">+{tag}</span>
+													{/each}
+													{#each row.removedTags || [] as tag}
+														<span class="rounded bg-red-200/50 px-1.5 py-0.5 text-[10px] font-bold text-red-800 line-through opacity-80 dark:bg-red-900/40 dark:text-red-300">-{tag}</span>
+													{/each}
+												</div>
+											{/if}
+										</li>
+									{/each}
+								</ul>
+							</div>
+						</div>
+					{/if}
+
 					{#if newTags.length > 0 || existingTags.length > 0}
 						<div>
 							<h3 class="mb-2 font-bold text-blue-600 dark:text-blue-400">Tags Found ({newTags.length + existingTags.length})</h3>
@@ -318,6 +382,7 @@
 				class="flex justify-end gap-3 mt-4"
 			>
 				<input type="hidden" name="validRows" value={validRowsJson} />
+				<input type="hidden" name="updateRows" value={updateRowsJson} />
 				<button
 					type="button"
 					onclick={() => (step = 'upload')}
@@ -326,7 +391,7 @@
 				>
 				<button
 					type="submit"
-					disabled={validRows.length === 0}
+					disabled={validRows.length === 0 && updateRows.length === 0}
 					class="rounded-xl bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
 					>Confirm Import</button
 				>
@@ -343,6 +408,7 @@
 		<!-- Hidden form for validation -->
 		<form method="post" action="?/validateCsv" use:enhance={handleValidateSubmit} class="hidden">
 			<input type="hidden" name="rows" value={parsedRowsJson} />
+			<input type="hidden" name="isUpdate" value={isUpdate.toString()} />
 			<button type="submit" bind:this={validateFormBtn}>Validate</button>
 		</form>
 	</div>

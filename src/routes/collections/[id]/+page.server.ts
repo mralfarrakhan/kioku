@@ -464,6 +464,7 @@ export const actions: Actions = {
 		
 		const formData = await event.request.formData();
 		const rowsStr = formData.get('rows')?.toString() || '[]';
+		const isUpdate = formData.get('isUpdate')?.toString() === 'true';
 		
 		let parsedRows: any[] = [];
 		try {
@@ -480,11 +481,14 @@ export const actions: Actions = {
 		
 		// Fetch existing terms for duplicates check
 		const existingCards = await db
-			.select({ term: flashcard.term, tags: flashcard.tags })
+			.select({ id: flashcard.id, term: flashcard.term, tags: flashcard.tags, definition: flashcard.definition })
 			.from(flashcard)
 			.where(eq(flashcard.collectionId, collectionId));
 			
-		const existingTermsSet = new Set(existingCards.map(c => c.term.trim().toLowerCase()));
+		const existingTermsMap = new Map<string, { id: string; tags: string[]; definition: string }>();
+		existingCards.forEach(c => {
+			existingTermsMap.set(c.term.trim().toLowerCase(), { id: c.id, tags: c.tags || [], definition: c.definition });
+		});
 		
 		const existingTagsSet = new Set<string>();
 		existingCards.forEach(c => {
@@ -497,6 +501,7 @@ export const actions: Actions = {
 		const errors: { row: number; message: string }[] = [];
 		const uniqueTagsSet = new Set<string>();
 		const validRows: any[] = [];
+		const updateRows: any[] = [];
 		const seenCsvTerms = new Set<string>(); // to prevent duplicates within the CSV itself
 		
 		for (let i = 0; i < parsedRows.length; i++) {
@@ -517,39 +522,63 @@ export const actions: Actions = {
 			}
 			
 			const lowerTerm = term.toLowerCase();
+			const existingData = existingTermsMap.get(lowerTerm);
 			
-			if (existingTermsSet.has(lowerTerm) || seenCsvTerms.has(lowerTerm)) {
-				skippedTerms.push(term);
-			} else {
-				// Validate tags
-				let parsedTags: string[] = [];
-				let tagError = null;
-				
-				if (row.tags && typeof row.tags === 'string') {
-					parsedTags = row.tags
-						.split(',')
-						.map((t: string) => t.replace(/\s+/g, ' ').trim().toLowerCase())
-						.filter(Boolean);
-						
-					if (parsedTags.length > 20) {
-						tagError = 'Maximum 20 tags allowed';
-					} else if (parsedTags.some((t) => t.length > 16)) {
-						tagError = 'A tag exceeds 16 characters';
-					} else if (parsedTags.some((t) => !/^[a-z0-9. ]+$/.test(t))) {
-						tagError = 'Tags can only contain lowercase letters, numbers, dots, and spaces';
-					}
+			if (seenCsvTerms.has(lowerTerm)) {
+				errors.push({ row: rowNumber, message: 'Duplicate term within the CSV' });
+				continue;
+			}
+			
+			// Validate tags
+			let parsedTags: string[] = [];
+			let tagError = null;
+			
+			if (row.tags && typeof row.tags === 'string') {
+				parsedTags = row.tags
+					.split(',')
+					.map((t: string) => t.replace(/\s+/g, ' ').trim().toLowerCase())
+					.filter(Boolean);
 					
-					if (tagError) {
-						errors.push({ row: rowNumber, message: tagError });
-						continue; // Skip this row due to tag error
-					}
-					
-					parsedTags = Array.from(new Set(parsedTags));
-					parsedTags.forEach(t => uniqueTagsSet.add(t));
+				if (parsedTags.length > 20) {
+					tagError = 'Maximum 20 tags allowed';
+				} else if (parsedTags.some((t) => t.length > 16)) {
+					tagError = 'A tag exceeds 16 characters';
+				} else if (parsedTags.some((t) => !/^[a-z0-9. ]+$/.test(t))) {
+					tagError = 'Tags can only contain lowercase letters, numbers, dots, and spaces';
 				}
 				
-				seenCsvTerms.add(lowerTerm);
+				if (tagError) {
+					errors.push({ row: rowNumber, message: tagError });
+					continue; // Skip this row due to tag error
+				}
 				
+				parsedTags = Array.from(new Set(parsedTags));
+				parsedTags.forEach(t => uniqueTagsSet.add(t));
+			}
+			
+			seenCsvTerms.add(lowerTerm);
+			
+			if (existingData) {
+				if (isUpdate) {
+					const oldTagsSet = new Set(existingData.tags);
+					const newTagsSet = new Set(parsedTags);
+					
+					const addedTags = parsedTags.filter(t => !oldTagsSet.has(t));
+					const removedTags = existingData.tags.filter(t => !newTagsSet.has(t));
+
+					updateRows.push({
+						id: existingData.id,
+						term,
+						definition,
+						oldDefinition: existingData.definition,
+						tags: parsedTags,
+						addedTags,
+						removedTags
+					});
+				} else {
+					skippedTerms.push(term);
+				}
+			} else {
 				validRows.push({
 					term,
 					definition,
@@ -576,7 +605,8 @@ export const actions: Actions = {
 			errors,
 			newTags,
 			existingTags,
-			validRows
+			validRows,
+			updateRows
 		};
 	},
 
@@ -587,15 +617,18 @@ export const actions: Actions = {
 		
 		const formData = await event.request.formData();
 		const rowsStr = formData.get('validRows')?.toString() || '[]';
+		const updateRowsStr = formData.get('updateRows')?.toString() || '[]';
 		
 		let validRows: any[] = [];
+		let updateRows: any[] = [];
 		try {
 			validRows = JSON.parse(rowsStr);
+			updateRows = JSON.parse(updateRowsStr);
 		} catch(e) {
 			return fail(400, { message: 'Invalid JSON data' });
 		}
 		
-		if (!Array.isArray(validRows) || validRows.length === 0) {
+		if ((!Array.isArray(validRows) || validRows.length === 0) && (!Array.isArray(updateRows) || updateRows.length === 0)) {
 			return fail(400, { message: 'No valid rows to import' });
 		}
 
@@ -627,6 +660,25 @@ export const actions: Actions = {
 					await db.insert(flashcard).values(batch);
 				}
 			}
+
+			if (updateRows.length > 0) {
+				const updatePromises = updateRows.map(row => 
+					db.update(flashcard)
+						.set({ 
+							term: row.term, 
+							definition: row.definition, 
+							tags: row.tags || []
+						})
+						.where(
+							and(
+								eq(flashcard.id, row.id), 
+								eq(flashcard.collectionId, collectionId)
+							)
+						)
+				);
+				await Promise.all(updatePromises);
+			}
+
 			return { success: true };
 		} catch (e) {
 			console.error('importCsv Error:', e);
