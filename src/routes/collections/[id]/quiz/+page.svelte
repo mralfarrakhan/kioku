@@ -340,8 +340,8 @@
 					<!-- Background overlay for mobile to draw attention to the bottom sheet -->
 					<div class="fixed inset-0 z-40 bg-gray-900/20 backdrop-blur-[2px] transition-opacity dark:bg-gray-950/40 sm:hidden"></div>
 					
-					<div class="fixed inset-x-0 bottom-0 z-50 flex min-h-[140px] animate-slide-up-sheet flex-col items-center justify-center rounded-t-3xl border-t-4 bg-white px-6 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] dark:bg-gray-900 {isCorrect ? 'border-green-500' : 'border-red-500'} sm:relative sm:inset-auto sm:z-auto sm:min-h-0 sm:mt-8 sm:h-20 sm:animate-none sm:flex-row sm:rounded-none sm:border-0 sm:bg-transparent sm:px-0 sm:shadow-none sm:dark:bg-transparent">
-						<div class="flex w-full max-w-sm flex-col items-center justify-between gap-4 sm:max-w-none sm:flex-row sm:justify-center sm:gap-6">
+					<div class="fixed inset-0 z-50 flex items-center justify-center px-4 sm:relative sm:inset-auto sm:z-auto sm:min-h-0 sm:mt-8 sm:h-20 sm:px-0">
+						<div class="flex w-full max-w-sm animate-fade-in flex-col items-center justify-between gap-6 rounded-3xl border-4 bg-white py-8 px-6 shadow-2xl dark:bg-gray-900 {isCorrect ? 'border-green-500' : 'border-red-500'} sm:max-w-none sm:animate-none sm:flex-row sm:justify-center sm:gap-6 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:dark:bg-transparent">
 							{#if currentCard.type !== 'note'}
 								<div
 									class="flex items-center gap-2 text-2xl font-extrabold sm:text-xl {isCorrect
