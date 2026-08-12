@@ -44,6 +44,10 @@ export const flashcard = sqliteTable('flashcard', {
 		.$type<string[]>()
 		.notNull()
 		.default(sql`'[]'`),
+	metadata: text('metadata', { mode: 'json' })
+		.$type<Record<string, any>>()
+		.notNull()
+		.default(sql`'{}'`),
 	createdAt: integer('created_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
 		.notNull(),

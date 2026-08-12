@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { collection, flashcard } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
+import matter from 'gray-matter';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -36,6 +37,9 @@ export const load: PageServerLoad = async (event) => {
 		throw error(404, 'Note not found');
 	}
 
+	const note = notes[0];
+	const parsed = matter(note.definition);
+	
 	const d1 = event.platform?.env?.DB as D1Database | undefined;
 	let allUniqueTags: string[] = [];
 
@@ -57,7 +61,8 @@ export const load: PageServerLoad = async (event) => {
 
 	return {
 		collection: coll,
-		note: notes[0],
+		note,
+		cleanContent: parsed.content,
 		allUniqueTags
 	};
 };

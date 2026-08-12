@@ -574,6 +574,11 @@
 								<h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">
 									{@html parseInlineMarkdown(card.term)}
 								</h3>
+								{#if card.metadata?.description}
+									<p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+										{card.metadata.description}
+									</p>
+								{/if}
 								{#if card.tags && card.tags.length > 0}
 									<div class="mt-2 flex flex-wrap gap-1.5">
 										{#each card.tags as tag}

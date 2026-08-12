@@ -100,6 +100,7 @@ export const load: PageServerLoad = async (event) => {
 			definition: flashcard.definition,
 			type: flashcard.type,
 			tags: flashcard.tags,
+			metadata: flashcard.metadata,
 			collectionId: flashcard.collectionId,
 			createdAt: flashcard.createdAt,
 			updatedAt: flashcard.updatedAt,

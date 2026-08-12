@@ -83,6 +83,12 @@
 				{@html parseInlineMarkdown(data.note.term)}
 			</div>
 
+			{#if data.note.metadata?.description}
+				<div class="mb-6 text-xl text-gray-600 dark:text-gray-400">
+					{data.note.metadata.description}
+				</div>
+			{/if}
+
 			{#if data.note.tags && data.note.tags.length > 0}
 				<div class="mb-6 flex gap-2">
 					{#each data.note.tags as tag}
@@ -92,7 +98,7 @@
 			{/if}
 
 			<div class="prose prose-lg max-w-none text-left dark:prose-invert">
-				{@html parseMarkdown(data.note.definition)}
+				{@html parseMarkdown(data.cleanContent)}
 			</div>
 		</div>
 	</div>

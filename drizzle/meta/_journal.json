@@ -85,6 +85,13 @@
       "when": 1785849267296,
       "tag": "0011_youthful_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1786530022536,
+      "tag": "0012_normal_beast",
+      "breakpoints": true
     }
   ]
 }

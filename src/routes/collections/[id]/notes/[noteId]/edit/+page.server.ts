@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { collection, flashcard } from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
+import matter from 'gray-matter';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -69,20 +70,32 @@ export const actions: Actions = {
 
 		const { id, noteId } = event.params;
 		const formData = await event.request.formData();
-		const term = formData.get('term')?.toString();
 		const definition = formData.get('definition')?.toString();
 
-		let tags: string[] = [];
-		try {
-			const parsed = JSON.parse(formData.get('tags')?.toString() || '[]');
-			if (Array.isArray(parsed)) {
-				tags = parsed;
-			} else {
-				return fail(400, { message: 'Tags must be an array' });
-			}
-		} catch (e) {
-			return fail(400, { message: 'Invalid tags format' });
+		if (!definition) {
+			return fail(400, { message: 'Content is required' });
 		}
+
+		const parsed = matter(definition);
+		
+		let term = parsed.data.title;
+		if (!term) {
+			const h1Match = parsed.content.match(/^#\s+(.+)$/m);
+			if (h1Match) term = h1Match[1].trim();
+		}
+		
+		if (!term) {
+			term = 'Untitled Note';
+		}
+
+		let tags: string[] = [];
+		if (Array.isArray(parsed.data.tags)) {
+			tags = parsed.data.tags.map(String);
+		} else if (typeof parsed.data.tags === 'string') {
+			tags = parsed.data.tags.split(',').map((s: string) => s.trim());
+		}
+
+		const { title: _title, tags: _tags, ...metadata } = parsed.data;
 
 		// Validation rules for tags
 		if (tags.length > 20) return fail(400, { message: 'Maximum 20 tags allowed' });
@@ -92,10 +105,6 @@ export const actions: Actions = {
 		if (tags.some((t) => !/^[a-z0-9. ]+$/.test(t)))
 			return fail(400, { message: 'Tags can only contain lowercase letters, numbers, dots, and spaces' });
 		tags = Array.from(new Set(tags));
-
-		if (!term || !definition) {
-			return fail(400, { message: 'Title and content are required' });
-		}
 
 		const db = getDb(event.platform?.env?.DB as D1Database);
 
@@ -114,6 +123,7 @@ export const actions: Actions = {
 					term: term.trim(),
 					definition: definition.trim(),
 					tags,
+					metadata,
 					updatedAt: new Date()
 				})
 				.where(and(eq(flashcard.id, noteId), eq(flashcard.collectionId, id)));
