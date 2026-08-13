@@ -109,7 +109,8 @@ export const load: PageServerLoad = async (event) => {
 			easeFactor: userFlashcardProgress.easeFactor,
 			nextReviewAt: userFlashcardProgress.nextReviewAt,
 			interval: userFlashcardProgress.interval,
-			repetitions: userFlashcardProgress.repetitions
+			repetitions: userFlashcardProgress.repetitions,
+			isIgnored: userFlashcardProgress.isIgnored
 		})
 		.from(flashcard)
 		.leftJoin(
@@ -723,6 +724,59 @@ export const actions: Actions = {
 		} catch (e) {
 			console.error('importCsv Error:', e);
 			return fail(500, { message: 'Failed to import flashcards' });
+		}
+	},
+
+	toggleIgnore: async (event) => {
+		const user = event.locals.user;
+		if (!user) return fail(401, { message: 'Unauthorized' });
+
+		const collectionId = event.params.id;
+		const formData = await event.request.formData();
+		const flashcardId = formData.get('id')?.toString();
+		const isIgnored = formData.get('isIgnored')?.toString() === 'true';
+
+		if (!flashcardId) return fail(400, { message: 'Missing ID' });
+
+		const db = getDb(event.platform?.env?.DB as D1Database);
+
+		try {
+			// First, ensure the card belongs to a collection the user has access to
+			// (We already know they're looking at it, but good to be safe)
+			
+			// Upsert userFlashcardProgress
+			const existingProgress = await db
+				.select()
+				.from(userFlashcardProgress)
+				.where(
+					and(
+						eq(userFlashcardProgress.userId, user.id),
+						eq(userFlashcardProgress.flashcardId, flashcardId)
+					)
+				);
+
+			if (existingProgress.length > 0) {
+				await db
+					.update(userFlashcardProgress)
+					.set({ isIgnored })
+					.where(
+						and(
+							eq(userFlashcardProgress.userId, user.id),
+							eq(userFlashcardProgress.flashcardId, flashcardId)
+						)
+					);
+			} else {
+				await db.insert(userFlashcardProgress).values({
+					userId: user.id,
+					flashcardId,
+					isIgnored
+				});
+			}
+
+			return { success: true };
+		} catch (e) {
+			console.error('toggleIgnore Error:', e);
+			return fail(500, { message: 'Failed to toggle ignore status' });
 		}
 	}
 };

@@ -44,7 +44,14 @@ export const load: PageServerLoad = async (event) => {
 	const excludeNotes = event.url.searchParams.get('excludeNotes') === 'true';
 
 	// Build dynamic conditions
-	const conditions = [eq(flashcard.collectionId, id)];
+	const conditions: any[] = [
+		eq(flashcard.collectionId, id),
+		or(
+			sql`${userFlashcardProgress.isIgnored} IS NULL`,
+			eq(userFlashcardProgress.isIgnored, false),
+			sql`${userFlashcardProgress.isIgnored} = 0`
+		)
+	];
 
 	const tagsParam = event.url.searchParams.get('tags');
 	if (tagsParam) {

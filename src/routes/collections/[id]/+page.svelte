@@ -433,7 +433,7 @@
 					name="q"
 					bind:value={searchQuery}
 					placeholder="Search term or definition..."
-					class="w-full rounded-xl border border-gray-300 bg-white py-2 pr-10 pl-4 font-medium focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+					class="w-full rounded-xl border border-gray-300 bg-white py-2 pr-12 pl-4 font-medium focus:border-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
 				/>
 				{#if searchQuery}
 					<button
@@ -442,7 +442,8 @@
 							searchQuery = '';
 							setTimeout(() => searchForm?.submit(), 0);
 						}}
-						class="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+						class="absolute top-1/2 right-1 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+						aria-label="Clear search"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -621,7 +622,7 @@
 								? 'Learning'
 								: 'Review'}
 					<div
-						class="rounded-2xl border-2 border-gray-100 bg-white p-5 shadow-sm transition hover:border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700"
+						class="rounded-2xl border-2 border-gray-100 bg-white p-5 shadow-sm transition hover:border-gray-200 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700 {card.isIgnored ? 'opacity-50' : ''}"
 					>
 						{#if editCardId === card.id && isOwner}
 							<form
@@ -760,6 +761,20 @@
 								</div>
 
 								<div class="flex items-center gap-2">
+									<form
+										method="post"
+										action="?/toggleIgnore"
+										use:enhance
+									>
+										<input type="hidden" name="id" value={card.id} />
+										<input type="hidden" name="isIgnored" value={card.isIgnored ? 'false' : 'true'} />
+										<button
+											type="submit"
+											class="rounded-lg px-4 py-2 text-sm font-bold transition text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+										>
+											{card.isIgnored ? 'Include' : 'Exclude'}
+										</button>
+									</form>
 									<button
 										onclick={() =>
 											isOwner &&

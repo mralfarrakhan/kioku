@@ -1,0 +1,1 @@
+ALTER TABLE `user_flashcard_progress` ADD `is_ignored` integer DEFAULT false NOT NULL;

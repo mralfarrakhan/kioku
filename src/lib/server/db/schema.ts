@@ -86,7 +86,8 @@ export const userFlashcardProgress = sqliteTable('user_flashcard_progress', {
 		.notNull(),
 	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
 		.$onUpdate(() => new Date())
-		.notNull()
+		.notNull(),
+	isIgnored: integer('is_ignored', { mode: 'boolean' }).notNull().default(false)
 });
 
 export * from './auth.schema';

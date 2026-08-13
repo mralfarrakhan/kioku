@@ -92,6 +92,13 @@
       "when": 1786530022536,
       "tag": "0012_normal_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1786631838079,
+      "tag": "0013_shocking_spirit",
+      "breakpoints": true
     }
   ]
 }
