@@ -1,9 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
-	let { collectionId, tagCounts = [] } = $props<{
+	let {
+		collectionId,
+		tagCounts = [],
+		userType = 'BASIC'
+	} = $props<{
 		collectionId: string;
 		tagCounts?: { tag: string; count: number }[];
+		userType?: string;
 	}>();
 
 	let dialog: HTMLDialogElement | undefined = $state();
@@ -12,6 +17,12 @@
 	let selectedTags = $state<string[]>([]);
 	let includeNotes = $state(true);
 	let fullRandomMode = $state(false);
+
+	$effect(() => {
+		if (userType === 'BASIC' && customSessionLength > 100) {
+			customSessionLength = 100;
+		}
+	});
 
 	export function showModal() {
 		selectedTags = []; // Reset on open
@@ -91,10 +102,17 @@
 						<input
 							type="number"
 							min="1"
+							max={userType === 'BASIC' ? '100' : undefined}
+							disabled={userType === 'BASIC'}
 							bind:value={customSessionLength}
-							class="w-full rounded-xl border border-gray-300 p-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+							class="w-full rounded-xl border border-gray-300 p-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100 disabled:opacity-75 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:disabled:bg-gray-900"
 							placeholder="Enter number of cards"
 						/>
+						{#if userType === 'BASIC'}
+							<p class="mt-1 text-xs text-blue-600 dark:text-blue-400">
+								BASIC users can only quiz up to 100 items per session.
+							</p>
+						{/if}
 					</div>
 				{/if}
 			</div>

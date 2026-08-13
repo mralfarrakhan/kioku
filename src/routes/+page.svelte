@@ -37,7 +37,12 @@
 				method="post"
 				action="?/createCollection"
 				use:enhance={() => {
-					return async ({ update }) => {
+					return async ({ result, update }) => {
+						if (result.type === 'failure' && result.data?.limitReached) {
+							showCreateModal = false;
+							premiumModal?.showModal(result.data.limitMessage as string, 'Limit Reached');
+							return;
+						}
 						showCreateModal = false;
 						await update();
 					};

@@ -15,3 +15,13 @@ export const QUIZ_CONFIG = {
 		averageResponseThresholdMs: 5000
 	}
 };
+
+export const APP_CONFIG = {
+	limits: {
+		basic: {
+			collections: 5,
+			itemsPerCollection: 100,
+			maxQuizSessionLength: 100
+		}
+	}
+};

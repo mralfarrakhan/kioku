@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { collection, user, flashcard } from '$lib/server/db/schema';
 import { eq, or, and, desc, count } from 'drizzle-orm';
+import { APP_CONFIG } from '$lib/config';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -76,6 +77,19 @@ export const actions: Actions = {
 		}
 
 		const db = getDb(event.platform?.env?.DB as D1Database);
+
+		if (user.type === 'BASIC') {
+			const countResult = await db
+				.select({ value: count() })
+				.from(collection)
+				.where(eq(collection.userId, user.id));
+			if (countResult[0].value >= APP_CONFIG.limits.basic.collections) {
+				return fail(403, {
+					limitReached: true,
+					limitMessage: `BASIC users can only create up to ${APP_CONFIG.limits.basic.collections} collections.`
+				});
+			}
+		}
 
 		try {
 			await db.insert(collection).values({

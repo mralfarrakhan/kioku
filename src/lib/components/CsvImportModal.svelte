@@ -3,8 +3,10 @@
 	import Papa from 'papaparse';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { invalidateAll } from '$app/navigation';
+	import PremiumFeatureModal from './PremiumFeatureModal.svelte';
 
 	let dialog: HTMLDialogElement | undefined = $state();
+	let premiumModal: ReturnType<typeof PremiumFeatureModal> | undefined = $state();
 	let fileInput: HTMLInputElement | undefined = $state();
 
 	let file: File | null = $state(null);
@@ -128,6 +130,11 @@
 				await invalidateAll();
 				close();
 			} else if (result.type === 'failure') {
+				if (result.data?.limitReached) {
+					close();
+					premiumModal?.showModal(result.data.limitMessage as string, 'Limit Reached');
+					return;
+				}
 				errorMsg = (result.data?.message as string) || 'Import failed.';
 				step = 'summary';
 			} else {
@@ -484,3 +491,5 @@
 		</form>
 	</div>
 </dialog>
+
+<PremiumFeatureModal bind:this={premiumModal} />

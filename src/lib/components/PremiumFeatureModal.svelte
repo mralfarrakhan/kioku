@@ -8,8 +8,12 @@
 	}>();
 
 	let dialog: HTMLDialogElement | undefined = $state();
+	let currentTitle = $state(title);
+	let currentMessage = $state(message);
 
-	export function showModal() {
+	export function showModal(customMessage?: string, customTitle?: string) {
+		currentTitle = customTitle || title;
+		currentMessage = customMessage || message;
 		dialog?.showModal();
 	}
 
@@ -31,8 +35,8 @@
 		onkeydown={(e) => e.stopPropagation()}
 		role="document"
 	>
-		<h3 class="mb-2 text-xl font-bold text-gray-900 dark:text-gray-100">{title}</h3>
-		<p class="mb-6 text-gray-600 dark:text-gray-400">{message}</p>
+		<h3 class="mb-2 text-xl font-bold text-gray-900 dark:text-gray-100">{currentTitle}</h3>
+		<p class="mb-6 text-gray-600 dark:text-gray-400">{currentMessage}</p>
 
 		<div class="flex justify-end gap-3">
 			<button

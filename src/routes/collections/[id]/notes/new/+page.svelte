@@ -4,11 +4,13 @@
 	import type { PageData, ActionData } from './$types';
 	import { parseMarkdown, parseInlineMarkdown } from '$lib/markdown';
 	import Tag from '$lib/components/Tag.svelte';
+	import PremiumFeatureModal from '$lib/components/PremiumFeatureModal.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let isSubmitting = $state(false);
 	let definition = $state('');
+	let premiumModal: ReturnType<typeof PremiumFeatureModal> | undefined = $state();
 
 	let previewData = $derived.by(() => {
 		let title = '';
@@ -86,7 +88,12 @@
 		action="?/createNote"
 		use:enhance={() => {
 			isSubmitting = true;
-			return async ({ update }) => {
+			return async ({ result, update }) => {
+				if (result.type === 'failure' && result.data?.limitReached) {
+					isSubmitting = false;
+					premiumModal?.showModal(result.data.limitMessage as string, 'Limit Reached');
+					return;
+				}
 				await update();
 				isSubmitting = false;
 			};
@@ -180,3 +187,5 @@
 		</div>
 	</form>
 </div>
+
+<PremiumFeatureModal bind:this={premiumModal} />

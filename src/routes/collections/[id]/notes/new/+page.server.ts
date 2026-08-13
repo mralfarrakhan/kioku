@@ -2,8 +2,9 @@ import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { collection, flashcard } from '$lib/server/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, count } from 'drizzle-orm';
 import matter from 'gray-matter';
+import { APP_CONFIG } from '$lib/config';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -105,6 +106,19 @@ export const actions: Actions = {
 			.where(and(eq(collection.id, id), eq(collection.userId, user.id)));
 
 		if (cols.length === 0) return fail(403, { message: 'Forbidden' });
+
+		if (user.type === 'BASIC') {
+			const countResult = await db
+				.select({ value: count() })
+				.from(flashcard)
+				.where(eq(flashcard.collectionId, id));
+			if (countResult[0].value >= APP_CONFIG.limits.basic.itemsPerCollection) {
+				return fail(403, {
+					limitReached: true,
+					limitMessage: `BASIC users can only have up to ${APP_CONFIG.limits.basic.itemsPerCollection} items (cards + notes) per collection.`
+				});
+			}
+		}
 
 		try {
 			await db.insert(flashcard).values({

@@ -310,6 +310,7 @@
 	bind:this={advancedQuizModal}
 	collectionId={data.collection.id}
 	tagCounts={data.tagCounts}
+	userType={page.data.user?.type}
 />
 <CsvImportModal bind:this={csvImportModal} />
 

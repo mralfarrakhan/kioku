@@ -3,6 +3,7 @@
 	import { parseMarkdown } from '$lib/markdown';
 	import { toast } from '$lib/stores/toast.svelte';
 	import TagInput from './TagInput.svelte';
+	import PremiumFeatureModal from './PremiumFeatureModal.svelte';
 
 	let { suggestedTags = [], type = 'flashcard' } = $props<{
 		suggestedTags?: string[];
@@ -10,6 +11,7 @@
 	}>();
 
 	let createCardDialog: HTMLDialogElement | undefined = $state();
+	let premiumModal: ReturnType<typeof PremiumFeatureModal> | undefined = $state();
 	let createCardError = $state<string | null>(null);
 	let termInputEl: HTMLTextAreaElement | undefined = $state();
 	let newCardTerm = $state('');
@@ -69,6 +71,11 @@
 			createCardError = null;
 			return async ({ result, update, formElement }) => {
 				if (result.type === 'failure') {
+					if (result.data?.limitReached) {
+						closeModal();
+						premiumModal?.showModal(result.data.limitMessage as string, 'Limit Reached');
+						return;
+					}
 					createCardError = result.data?.message as string;
 				} else if (result.type === 'success') {
 					await update();
@@ -136,3 +143,5 @@
 		</div>
 	</form>
 </dialog>
+
+<PremiumFeatureModal bind:this={premiumModal} />

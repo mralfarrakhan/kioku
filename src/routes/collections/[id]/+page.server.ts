@@ -2,7 +2,8 @@ import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { collection, flashcard, userFlashcardProgress, flashcardFts } from '$lib/server/db/schema';
-import { eq, and, desc, count, asc, sql, or } from 'drizzle-orm';
+import { eq, or, and, desc, asc, sql, count } from 'drizzle-orm';
+import { APP_CONFIG } from '$lib/config';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -321,6 +322,19 @@ export const actions: Actions = {
 		}
 
 		const db = getDb(event.platform?.env?.DB as D1Database);
+
+		if (user.type === 'BASIC') {
+			const countResult = await db
+				.select({ value: count() })
+				.from(flashcard)
+				.where(eq(flashcard.collectionId, id));
+			if (countResult[0].value >= APP_CONFIG.limits.basic.itemsPerCollection) {
+				return fail(403, {
+					limitReached: true,
+					limitMessage: `BASIC users can only have up to ${APP_CONFIG.limits.basic.itemsPerCollection} items (cards + notes) per collection.`
+				});
+			}
+		}
 
 		// Verify ownership
 		const cols = await db
@@ -649,6 +663,20 @@ export const actions: Actions = {
 		}
 
 		const db = getDb(event.platform?.env?.DB as D1Database);
+
+		if (user.type === 'BASIC') {
+			const countResult = await db
+				.select({ value: count() })
+				.from(flashcard)
+				.where(eq(flashcard.collectionId, collectionId));
+
+			if (countResult[0].value + validRows.length > APP_CONFIG.limits.basic.itemsPerCollection) {
+				return fail(403, {
+					limitReached: true,
+					limitMessage: `This import would exceed the BASIC user limit of ${APP_CONFIG.limits.basic.itemsPerCollection} items (cards + notes) per collection.`
+				});
+			}
+		}
 
 		// Verify ownership
 		const cols = await db
