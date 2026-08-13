@@ -68,7 +68,8 @@ export const actions: Actions = {
 		const description = formData.get('description')?.toString();
 		let isShared = formData.get('isShared')?.toString() === 'on';
 
-		if (user.type === 'BASIC') {
+		// Limit check for BASIC users
+		if ((user as any).type === 'BASIC') {
 			isShared = true; // Force public for BASIC
 		}
 
@@ -78,7 +79,7 @@ export const actions: Actions = {
 
 		const db = getDb(event.platform?.env?.DB as D1Database);
 
-		if (user.type === 'BASIC') {
+		if ((user as any).type === 'BASIC') {
 			const countResult = await db
 				.select({ value: count() })
 				.from(collection)

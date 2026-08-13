@@ -107,7 +107,7 @@ export const actions: Actions = {
 
 		if (cols.length === 0) return fail(403, { message: 'Forbidden' });
 
-		if (user.type === 'BASIC') {
+		if ((user as any).type === 'BASIC') {
 			const countResult = await db
 				.select({ value: count() })
 				.from(flashcard)

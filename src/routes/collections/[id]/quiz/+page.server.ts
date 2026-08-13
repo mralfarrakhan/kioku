@@ -2,7 +2,7 @@ import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { collection, flashcard, userFlashcardProgress } from '$lib/server/db/schema';
-import { eq, and, desc, inArray } from 'drizzle-orm';
+import { eq, and, desc, inArray, or, like, sql } from 'drizzle-orm';
 import { QUIZ_CONFIG } from '$lib/config';
 
 // Simple shuffle function
@@ -33,8 +33,18 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(302, '/');
 	}
 
-	// Get all items
-	let allItems = await db.select().from(flashcard).where(eq(flashcard.collectionId, id));
+	// Parse count
+	const countParam = event.url.searchParams.get('count');
+	let takeCount = 20;
+	if (countParam && !isNaN(parseInt(countParam))) {
+		takeCount = parseInt(countParam);
+	}
+	const bufferSize = takeCount * 3;
+	const isRandomMode = event.url.searchParams.get('mode') === 'random';
+	const excludeNotes = event.url.searchParams.get('excludeNotes') === 'true';
+
+	// Build dynamic conditions
+	const conditions = [eq(flashcard.collectionId, id)];
 
 	const tagsParam = event.url.searchParams.get('tags');
 	if (tagsParam) {
@@ -43,16 +53,43 @@ export const load: PageServerLoad = async (event) => {
 			.map((t) => t.trim())
 			.filter(Boolean);
 		if (tagsList.length > 0) {
-			allItems = allItems.filter((item) => {
-				const itemTags = item.tags || [];
-				return itemTags.some((tag) => tagsList.includes(tag));
-			});
+			const tagConditions = tagsList.map((tag) => like(flashcard.tags, `%"${tag}"%`));
+			conditions.push(or(...tagConditions) as any);
 		}
 	}
 
+	// Fetch buffered highly relevant items
+	const now = Date.now();
+	const bufferedResults = await db
+		.select({
+			card: flashcard,
+			progress: userFlashcardProgress
+		})
+		.from(flashcard)
+		.leftJoin(
+			userFlashcardProgress,
+			and(
+				eq(userFlashcardProgress.flashcardId, flashcard.id),
+				eq(userFlashcardProgress.userId, event.locals.user.id)
+			)
+		)
+		.where(and(...conditions as any[]))
+		.orderBy(
+			isRandomMode
+				? sql`RANDOM()`
+				: sql`
+					CASE 
+						WHEN ${userFlashcardProgress.id} IS NULL THEN 1 
+						WHEN ${userFlashcardProgress.nextReviewAt} <= ${now} THEN 2 
+						ELSE 3 
+					END ASC, 
+					RANDOM()
+				`
+		)
+		.limit(bufferSize);
+
+	const allItems = bufferedResults.map((r) => r.card);
 	const allCards = allItems.filter((i) => i.type === 'flashcard');
-	const excludeNotes = event.url.searchParams.get('excludeNotes') === 'true';
-	const isRandomMode = event.url.searchParams.get('mode') === 'random';
 	const allNotes = excludeNotes ? [] : allItems.filter((i) => i.type === 'note');
 
 	if (allCards.length < 4) {
@@ -60,29 +97,12 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(302, `/collections/${id}`);
 	}
 
-	// Get user progress for these cards and notes
-	// Chunk the query to avoid Cloudflare D1's 100 parameter limit per statement
-	const progressRecords = [];
-	const allItemIds = allItems.map((c) => c.id);
-	const chunkSize = 90; // safely under 100
-
-	for (let i = 0; i < allItemIds.length; i += chunkSize) {
-		const chunk = allItemIds.slice(i, i + chunkSize);
-		if (chunk.length > 0) {
-			const records = await db
-				.select()
-				.from(userFlashcardProgress)
-				.where(
-					and(
-						eq(userFlashcardProgress.userId, event.locals.user.id),
-						inArray(userFlashcardProgress.flashcardId, chunk)
-					)
-				);
-			progressRecords.push(...records);
+	const progressMap = new Map();
+	for (const r of bufferedResults) {
+		if (r.progress) {
+			progressMap.set(r.card.id, r.progress);
 		}
 	}
-
-	const progressMap = new Map(progressRecords.map((p) => [p.flashcardId, p]));
 
 	// 1. Calculate weights for each flashcard
 	const weightedCards = allCards.map((card) => {
@@ -123,13 +143,6 @@ export const load: PageServerLoad = async (event) => {
 		}
 		return { card, weight, baseWeight: weight };
 	});
-
-	// Parse count
-	const countParam = event.url.searchParams.get('count');
-	let takeCount = 20;
-	if (countParam && !isNaN(parseInt(countParam))) {
-		takeCount = parseInt(countParam);
-	}
 
 	let selectedCards: typeof allCards = [];
 	let selectedNotes: typeof allNotes = [];
