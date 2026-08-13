@@ -32,7 +32,7 @@
 				if (match) {
 					const key = match[1].trim();
 					let value = match[2].trim();
-					
+
 					if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
 					else if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
 
@@ -40,9 +40,16 @@
 						title = value;
 					} else if (key === 'tags') {
 						if (value.startsWith('[') && value.endsWith(']')) {
-							tags = value.slice(1, -1).split(',').map(t => t.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+							tags = value
+								.slice(1, -1)
+								.split(',')
+								.map((t) => t.trim().replace(/^["']|["']$/g, ''))
+								.filter(Boolean);
 						} else {
-							tags = value.split(',').map(t => t.trim()).filter(Boolean);
+							tags = value
+								.split(',')
+								.map((t) => t.trim())
+								.filter(Boolean);
 						}
 					} else {
 						metadata[key] = value;
@@ -106,7 +113,9 @@
 						{isSubmitting ? 'Saving...' : 'Save Note'}
 					</button>
 					{#if definition.trim().length > 0 && !previewData.title}
-						<span class="text-xs font-medium text-red-500">A title in frontmatter or # Heading is required</span>
+						<span class="text-xs font-medium text-red-500"
+							>A title in frontmatter or # Heading is required</span
+						>
 					{/if}
 				</div>
 			{/if}
@@ -144,9 +153,13 @@
 					></textarea>
 				</div>
 
-				<div class="mt-4 flex flex-col border-t border-gray-100 pt-16 pb-12 dark:border-gray-800/60">
+				<div
+					class="mt-4 flex flex-col border-t border-gray-100 pt-16 pb-12 dark:border-gray-800/60"
+				>
 					{#if definition}
-						<div class="mb-6 w-full text-5xl font-black tracking-tight text-gray-900 dark:text-gray-100">
+						<div
+							class="mb-6 w-full text-5xl font-black tracking-tight text-gray-900 dark:text-gray-100"
+						>
 							{#if previewData.title}
 								{@html parseInlineMarkdown(previewData.title)}
 							{:else}

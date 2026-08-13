@@ -227,7 +227,7 @@ export const load: PageServerLoad = async (event) => {
 			.where(eq(flashcard.collectionId, id));
 
 		allUniqueTags = Array.from(new Set(allTagsResult.flatMap((c) => c.tags || [])));
-		
+
 		const countsMap = new Map<string, number>();
 		for (const card of allTagsResult) {
 			if (card.type === 'flashcard') {
@@ -311,7 +311,9 @@ export const actions: Actions = {
 		if (tags.some((t) => t.length > 16))
 			return fail(400, { message: 'Tag cannot exceed 16 characters' });
 		if (tags.some((t) => !/^[a-z0-9. ]+$/.test(t)))
-			return fail(400, { message: 'Tags can only contain lowercase letters, numbers, dots, and spaces' });
+			return fail(400, {
+				message: 'Tags can only contain lowercase letters, numbers, dots, and spaces'
+			});
 		tags = Array.from(new Set(tags));
 
 		if (!term || !definition) {
@@ -386,7 +388,9 @@ export const actions: Actions = {
 		if (tags.some((t) => t.length > 16))
 			return fail(400, { message: 'Tag cannot exceed 16 characters' });
 		if (tags.some((t) => !/^[a-z0-9. ]+$/.test(t)))
-			return fail(400, { message: 'Tags can only contain lowercase letters, numbers, dots, and spaces' });
+			return fail(400, {
+				message: 'Tags can only contain lowercase letters, numbers, dots, and spaces'
+			});
 		tags = Array.from(new Set(tags));
 
 		if (!flashcardId || !term || !definition) return fail(400, { message: 'Missing fields' });
@@ -461,84 +465,93 @@ export const actions: Actions = {
 		const user = event.locals.user;
 		if (!user) return fail(401, { message: 'Unauthorized' });
 		const collectionId = event.params.id;
-		
+
 		const formData = await event.request.formData();
 		const rowsStr = formData.get('rows')?.toString() || '[]';
 		const isUpdate = formData.get('isUpdate')?.toString() === 'true';
-		
+
 		let parsedRows: any[] = [];
 		try {
 			parsedRows = JSON.parse(rowsStr);
-		} catch(e) {
+		} catch (e) {
 			return fail(400, { message: 'Invalid JSON data' });
 		}
-		
+
 		if (!Array.isArray(parsedRows) || parsedRows.length === 0) {
 			return fail(400, { message: 'No rows provided' });
 		}
 
 		const db = getDb(event.platform?.env?.DB as D1Database);
-		
+
 		// Fetch existing terms for duplicates check
 		const existingCards = await db
-			.select({ id: flashcard.id, term: flashcard.term, tags: flashcard.tags, definition: flashcard.definition })
+			.select({
+				id: flashcard.id,
+				term: flashcard.term,
+				tags: flashcard.tags,
+				definition: flashcard.definition
+			})
 			.from(flashcard)
 			.where(eq(flashcard.collectionId, collectionId));
-			
+
 		const existingTermsMap = new Map<string, { id: string; tags: string[]; definition: string }>();
-		existingCards.forEach(c => {
-			existingTermsMap.set(c.term.trim().toLowerCase(), { id: c.id, tags: c.tags || [], definition: c.definition });
+		existingCards.forEach((c) => {
+			existingTermsMap.set(c.term.trim().toLowerCase(), {
+				id: c.id,
+				tags: c.tags || [],
+				definition: c.definition
+			});
 		});
-		
+
 		const existingTagsSet = new Set<string>();
-		existingCards.forEach(c => {
+		existingCards.forEach((c) => {
 			if (c.tags) {
-				c.tags.forEach(t => existingTagsSet.add(t));
+				c.tags.forEach((t) => existingTagsSet.add(t));
 			}
 		});
-		
+
 		const skippedTerms: string[] = [];
 		const errors: { row: number; message: string }[] = [];
 		const uniqueTagsSet = new Set<string>();
 		const validRows: any[] = [];
 		const updateRows: any[] = [];
 		const seenCsvTerms = new Set<string>(); // to prevent duplicates within the CSV itself
-		
+
 		for (let i = 0; i < parsedRows.length; i++) {
 			const row = parsedRows[i];
 			const rowNumber = i + 2; // +1 for 1-index, +1 because CSV has a header row
-			
+
 			const term = row.term?.toString().trim();
 			const definition = row.definition?.toString().trim();
-			
+
 			if (!term || term === '') {
 				errors.push({ row: rowNumber, message: 'Missing term' });
 				continue;
 			}
-			
+
 			if (!definition || definition === '') {
 				errors.push({ row: rowNumber, message: 'Missing definition' });
 				continue;
 			}
-			
+
 			const lowerTerm = term.toLowerCase();
 			const existingData = existingTermsMap.get(lowerTerm);
-			
+
 			if (seenCsvTerms.has(lowerTerm)) {
 				errors.push({ row: rowNumber, message: 'Duplicate term within the CSV' });
 				continue;
 			}
-			
+
 			// Validate tags
 			let parsedTags: string[] = [];
 			let tagError = null;
-			
+
 			if (row.tags && typeof row.tags === 'string') {
 				parsedTags = row.tags
 					.split(',')
 					.map((t: string) => t.replace(/\s+/g, ' ').trim().toLowerCase())
 					.filter(Boolean);
-					
+
 				if (parsedTags.length > 20) {
 					tagError = 'Maximum 20 tags allowed';
 				} else if (parsedTags.some((t) => t.length > 16)) {
@@ -546,25 +559,25 @@ export const actions: Actions = {
 				} else if (parsedTags.some((t) => !/^[a-z0-9. ]+$/.test(t))) {
 					tagError = 'Tags can only contain lowercase letters, numbers, dots, and spaces';
 				}
-				
+
 				if (tagError) {
 					errors.push({ row: rowNumber, message: tagError });
 					continue; // Skip this row due to tag error
 				}
-				
+
 				parsedTags = Array.from(new Set(parsedTags));
-				parsedTags.forEach(t => uniqueTagsSet.add(t));
+				parsedTags.forEach((t) => uniqueTagsSet.add(t));
 			}
-			
+
 			seenCsvTerms.add(lowerTerm);
-			
+
 			if (existingData) {
 				if (isUpdate) {
 					const oldTagsSet = new Set(existingData.tags);
 					const newTagsSet = new Set(parsedTags);
-					
-					const addedTags = parsedTags.filter(t => !oldTagsSet.has(t));
-					const removedTags = existingData.tags.filter(t => !newTagsSet.has(t));
+
+					const addedTags = parsedTags.filter((t) => !oldTagsSet.has(t));
+					const removedTags = existingData.tags.filter((t) => !newTagsSet.has(t));
 
 					updateRows.push({
 						id: existingData.id,
@@ -586,18 +599,18 @@ export const actions: Actions = {
 				});
 			}
 		}
-		
+
 		const newTags: string[] = [];
 		const existingTags: string[] = [];
-		
-		uniqueTagsSet.forEach(t => {
+
+		uniqueTagsSet.forEach((t) => {
 			if (existingTagsSet.has(t)) {
 				existingTags.push(t);
 			} else {
 				newTags.push(t);
 			}
 		});
-		
+
 		return {
 			success: true,
 			validCount: validRows.length,
@@ -614,67 +627,66 @@ export const actions: Actions = {
 		const user = event.locals.user;
 		if (!user) return fail(401, { message: 'Unauthorized' });
 		const collectionId = event.params.id;
-		
+
 		const formData = await event.request.formData();
 		const rowsStr = formData.get('validRows')?.toString() || '[]';
 		const updateRowsStr = formData.get('updateRows')?.toString() || '[]';
-		
+
 		let validRows: any[] = [];
 		let updateRows: any[] = [];
 		try {
 			validRows = JSON.parse(rowsStr);
 			updateRows = JSON.parse(updateRowsStr);
-		} catch(e) {
+		} catch (e) {
 			return fail(400, { message: 'Invalid JSON data' });
 		}
-		
-		if ((!Array.isArray(validRows) || validRows.length === 0) && (!Array.isArray(updateRows) || updateRows.length === 0)) {
+
+		if (
+			(!Array.isArray(validRows) || validRows.length === 0) &&
+			(!Array.isArray(updateRows) || updateRows.length === 0)
+		) {
 			return fail(400, { message: 'No valid rows to import' });
 		}
 
 		const db = getDb(event.platform?.env?.DB as D1Database);
-		
+
 		// Verify ownership
 		const cols = await db
 			.select()
 			.from(collection)
 			.where(and(eq(collection.id, collectionId), eq(collection.userId, user.id)));
 		if (cols.length === 0) return fail(403, { message: 'Forbidden' });
-		
+
 		// Batch insert to avoid D1 parameter limits
 		// D1 max params = 100. Each flashcard insert resolves to 8 parameters (including id, createdAt, updatedAt from Drizzle)
 		// Max batch size = 100 / 8 = 12.5. We use 10 for safety.
 		const batchSize = 10;
-		
+
 		try {
 			for (let i = 0; i < validRows.length; i += batchSize) {
-				const batch = validRows.slice(i, i + batchSize).map(row => ({
+				const batch = validRows.slice(i, i + batchSize).map((row) => ({
 					collectionId,
 					term: row.term,
 					definition: row.definition,
 					type: 'flashcard' as const,
 					tags: row.tags || []
 				}));
-				
+
 				if (batch.length > 0) {
 					await db.insert(flashcard).values(batch);
 				}
 			}
 
 			if (updateRows.length > 0) {
-				const updatePromises = updateRows.map(row => 
-					db.update(flashcard)
-						.set({ 
-							term: row.term, 
-							definition: row.definition, 
+				const updatePromises = updateRows.map((row) =>
+					db
+						.update(flashcard)
+						.set({
+							term: row.term,
+							definition: row.definition,
 							tags: row.tags || []
 						})
-						.where(
-							and(
-								eq(flashcard.id, row.id), 
-								eq(flashcard.collectionId, collectionId)
-							)
-						)
+						.where(and(eq(flashcard.id, row.id), eq(flashcard.collectionId, collectionId)))
 				);
 				await Promise.all(updatePromises);
 			}

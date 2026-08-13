@@ -338,10 +338,18 @@
 				<!-- Status indicator area -->
 				{#if isCorrect !== null}
 					<!-- Background overlay for mobile to draw attention to the bottom sheet -->
-					<div class="fixed inset-0 z-40 bg-gray-900/20 backdrop-blur-[2px] transition-opacity dark:bg-gray-950/40 sm:hidden"></div>
-					
-					<div class="fixed inset-0 z-50 flex items-center justify-center px-4 sm:relative sm:inset-auto sm:z-auto sm:min-h-0 sm:mt-8 sm:h-20 sm:px-0">
-						<div class="flex w-full max-w-sm animate-fade-in flex-col items-center justify-between gap-6 rounded-3xl border-4 bg-white py-8 px-6 shadow-2xl dark:bg-gray-900 {isCorrect ? 'border-green-500' : 'border-red-500'} sm:max-w-none sm:animate-none sm:flex-row sm:justify-center sm:gap-6 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:dark:bg-transparent">
+					<div
+						class="fixed inset-0 z-40 bg-gray-900/20 backdrop-blur-[2px] transition-opacity sm:hidden dark:bg-gray-950/40"
+					></div>
+
+					<div
+						class="fixed inset-0 z-50 flex items-center justify-center px-4 sm:relative sm:inset-auto sm:z-auto sm:mt-8 sm:h-20 sm:min-h-0 sm:px-0"
+					>
+						<div
+							class="animate-fade-in flex w-full max-w-sm flex-col items-center justify-between gap-6 rounded-3xl border-4 bg-white px-6 py-8 shadow-2xl dark:bg-gray-900 {isCorrect
+								? 'border-green-500'
+								: 'border-red-500'} sm:max-w-none sm:animate-none sm:flex-row sm:justify-center sm:gap-6 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:dark:bg-transparent"
+						>
 							{#if currentCard.type !== 'note'}
 								<div
 									class="flex items-center gap-2 text-2xl font-extrabold sm:text-xl {isCorrect
@@ -389,7 +397,7 @@
 
 							{#if oldScore !== null}
 								<div
-									class="animate-fade-in flex items-center gap-4 rounded-2xl bg-gray-50 px-4 py-2 dark:bg-gray-800/50 sm:gap-3 sm:rounded-none sm:border-l-2 sm:border-gray-100 sm:bg-transparent sm:px-0 sm:pl-6 sm:py-0 sm:dark:border-gray-800 sm:dark:bg-transparent"
+									class="animate-fade-in flex items-center gap-4 rounded-2xl bg-gray-50 px-4 py-2 sm:gap-3 sm:rounded-none sm:border-l-2 sm:border-gray-100 sm:bg-transparent sm:px-0 sm:py-0 sm:pl-6 dark:bg-gray-800/50 sm:dark:border-gray-800 sm:dark:bg-transparent"
 								>
 									<div class="relative flex h-16 w-16 items-center justify-center sm:h-14 sm:w-14">
 										<svg
@@ -401,7 +409,7 @@
 												cy="18"
 												r="15"
 												fill="none"
-												class="stroke-gray-200 dark:stroke-gray-700 sm:stroke-gray-100 sm:dark:stroke-gray-800"
+												class="stroke-gray-200 sm:stroke-gray-100 dark:stroke-gray-700 sm:dark:stroke-gray-800"
 												stroke-width="4"
 											></circle>
 											<circle
@@ -421,7 +429,9 @@
 												style="transition: {ringTransition};"
 											></circle>
 										</svg>
-										<span class="relative text-sm font-bold text-gray-700 dark:text-gray-300 sm:text-xs">
+										<span
+											class="relative text-sm font-bold text-gray-700 sm:text-xs dark:text-gray-300"
+										>
 											Lv.{displayLevel}
 										</span>
 									</div>

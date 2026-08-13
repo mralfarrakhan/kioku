@@ -7,7 +7,8 @@
 	}>();
 
 	let dialog: HTMLDialogElement | undefined = $state();
-	let sessionLength = $state<'10' | '20' | '50' | 'all'>('20');
+	let sessionLength = $state<'10' | '20' | '50' | 'custom'>('20');
+	let customSessionLength = $state(100);
 	let selectedTags = $state<string[]>([]);
 	let includeNotes = $state(true);
 	let fullRandomMode = $state(false);
@@ -25,7 +26,8 @@
 
 	function handleStart() {
 		close();
-		let url = `/collections/${collectionId}/quiz?count=${sessionLength}`;
+		let count = sessionLength === 'custom' ? customSessionLength : sessionLength;
+		let url = `/collections/${collectionId}/quiz?count=${count}`;
 		if (selectedTags.length > 0) {
 			url += `&tags=${encodeURIComponent(selectedTags.join(','))}`;
 		}
@@ -64,7 +66,7 @@
 					Session Length
 				</label>
 				<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-					{#each ['10', '20', '50', 'all'] as option}
+					{#each ['10', '20', '50', 'custom'] as option}
 						<label
 							class="relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 p-3 text-center transition-all {sessionLength ===
 							option
@@ -79,11 +81,22 @@
 								class="sr-only"
 							/>
 							<span class="font-bold">
-								{option === 'all' ? 'All' : option}
+								{option === 'custom' ? 'Custom' : option}
 							</span>
 						</label>
 					{/each}
 				</div>
+				{#if sessionLength === 'custom'}
+					<div class="animate-in fade-in slide-in-from-top-2 mt-3 duration-200">
+						<input
+							type="number"
+							min="1"
+							bind:value={customSessionLength}
+							class="w-full rounded-xl border border-gray-300 p-3 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+							placeholder="Enter number of cards"
+						/>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Future options can easily be added here -->
@@ -98,8 +111,7 @@
 						<div class="flex flex-col gap-2">
 							{#each tagCounts as { tag, count }}
 								<label
-									class="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors {count <
-									4
+									class="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors {count < 4
 										? 'cursor-not-allowed opacity-50'
 										: 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-800'}"
 								>
@@ -134,7 +146,9 @@
 
 			<!-- Include Notes Section -->
 			<div>
-				<label class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900/50 dark:hover:bg-gray-800">
+				<label
+					class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900/50 dark:hover:bg-gray-800"
+				>
 					<input
 						type="checkbox"
 						bind:checked={includeNotes}
@@ -153,7 +167,9 @@
 
 			<!-- Full Random Mode Section -->
 			<div>
-				<label class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900/50 dark:hover:bg-gray-800">
+				<label
+					class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900/50 dark:hover:bg-gray-800"
+				>
 					<input
 						type="checkbox"
 						bind:checked={fullRandomMode}
@@ -164,7 +180,8 @@
 							Enable Full Random Mode
 						</span>
 						<span class="block text-xs text-gray-500 dark:text-gray-400">
-							Ignore spaced repetition (SRS) and pick cards completely at random. Great for exam prep.
+							Ignore spaced repetition (SRS) and pick cards completely at random. Great for exam
+							prep.
 						</span>
 					</div>
 				</label>

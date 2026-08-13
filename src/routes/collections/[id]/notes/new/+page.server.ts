@@ -65,13 +65,13 @@ export const actions: Actions = {
 		}
 
 		const parsed = matter(definition);
-		
+
 		let term = parsed.data.title;
 		if (!term) {
 			const h1Match = parsed.content.match(/^#\s+(.+)$/m);
 			if (h1Match) term = h1Match[1].trim();
 		}
-		
+
 		if (!term) {
 			term = 'Untitled Note';
 		}
@@ -91,7 +91,9 @@ export const actions: Actions = {
 		if (tags.some((t) => t.length > 16))
 			return fail(400, { message: 'Tag cannot exceed 16 characters' });
 		if (tags.some((t) => !/^[a-z0-9. ]+$/.test(t)))
-			return fail(400, { message: 'Tags can only contain lowercase letters, numbers, dots, and spaces' });
+			return fail(400, {
+				message: 'Tags can only contain lowercase letters, numbers, dots, and spaces'
+			});
 		tags = Array.from(new Set(tags));
 
 		const db = getDb(event.platform?.env?.DB as D1Database);

@@ -122,7 +122,9 @@
 				}}
 				disabled={!isOwner}
 				title={!isOwner ? 'Only the owner can add cards' : ''}
-				class="rounded-xl bg-blue-500 px-4 py-2 font-bold text-white shadow-sm transition {isOwner ? 'hover:bg-blue-600 hover:shadow' : 'cursor-not-allowed opacity-60'}"
+				class="rounded-xl bg-blue-500 px-4 py-2 font-bold text-white shadow-sm transition {isOwner
+					? 'hover:bg-blue-600 hover:shadow'
+					: 'cursor-not-allowed opacity-60'}"
 			>
 				+ Add Flashcard
 			</button>
@@ -152,7 +154,7 @@
 						type="button"
 						onclick={() => (showAdvancedOptions = !showAdvancedOptions)}
 						title="Advanced Options"
-						class="flex h-11 w-11 items-center justify-center rounded-xl border-2 transition border-gray-200 bg-transparent text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-800"
+						class="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-gray-200 bg-transparent text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-600 dark:hover:bg-gray-800"
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -304,7 +306,11 @@
 {/if}
 
 <PremiumFeatureModal bind:this={premiumModal} />
-<AdvancedQuizModal bind:this={advancedQuizModal} collectionId={data.collection.id} tagCounts={data.tagCounts} />
+<AdvancedQuizModal
+	bind:this={advancedQuizModal}
+	collectionId={data.collection.id}
+	tagCounts={data.tagCounts}
+/>
 <CsvImportModal bind:this={csvImportModal} />
 
 <div

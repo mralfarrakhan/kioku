@@ -65,7 +65,7 @@ export const load: PageServerLoad = async (event) => {
 	const progressRecords = [];
 	const allItemIds = allItems.map((c) => c.id);
 	const chunkSize = 90; // safely under 100
-	
+
 	for (let i = 0; i < allItemIds.length; i += chunkSize) {
 		const chunk = allItemIds.slice(i, i + chunkSize);
 		if (chunk.length > 0) {
@@ -134,66 +134,59 @@ export const load: PageServerLoad = async (event) => {
 	let selectedCards: typeof allCards = [];
 	let selectedNotes: typeof allNotes = [];
 
-	if (countParam === 'all') {
-		// "All cards": Shuffle all available items exactly once
-		selectedCards = shuffle([...allCards]);
-		selectedNotes = shuffle([...allNotes]);
-	} else {
-		// N items: Weighted random sample with replacement
-		let lastDrawnId: string | null = null;
+	// N items: Weighted random sample with replacement
+	let lastDrawnId: string | null = null;
 
-		for (let i = 0; i < takeCount; i++) {
+	for (let i = 0; i < takeCount; i++) {
+		let totalWeight = 0;
+		// Temporarily zero the weight of the last drawn card if there's more than 1 card to avoid consecutive repeats
+		weightedCards.forEach((wc) => {
+			wc.weight = wc.card.id === lastDrawnId && allCards.length > 1 ? 0 : wc.baseWeight;
+			totalWeight += wc.weight;
+		});
+
+		let randomValue = Math.random() * totalWeight;
+		let drawnCard = null;
+
+		for (const wc of weightedCards) {
+			randomValue -= wc.weight;
+			if (randomValue <= 0) {
+				drawnCard = wc.card;
+				break;
+			}
+		}
+
+		// Fallback in case of rounding issues
+		if (!drawnCard) drawnCard = weightedCards[weightedCards.length - 1].card;
+
+		selectedCards.push(drawnCard);
+		lastDrawnId = drawnCard.id;
+	}
+
+	if (allNotes.length > 0) {
+		const noteTakeCount = Math.max(1, Math.ceil(takeCount * 0.15));
+		lastDrawnId = null;
+		for (let i = 0; i < noteTakeCount; i++) {
 			let totalWeight = 0;
-			// Temporarily zero the weight of the last drawn card if there's more than 1 card to avoid consecutive repeats
-			weightedCards.forEach((wc) => {
-				wc.weight = wc.card.id === lastDrawnId && allCards.length > 1 ? 0 : wc.baseWeight;
-				totalWeight += wc.weight;
+			weightedNotes.forEach((wn) => {
+				wn.weight = wn.card.id === lastDrawnId && allNotes.length > 1 ? 0 : wn.baseWeight;
+				totalWeight += wn.weight;
 			});
 
 			let randomValue = Math.random() * totalWeight;
-			let drawnCard = null;
+			let drawnNote = null;
 
-			for (const wc of weightedCards) {
-				randomValue -= wc.weight;
+			for (const wn of weightedNotes) {
+				randomValue -= wn.weight;
 				if (randomValue <= 0) {
-					drawnCard = wc.card;
+					drawnNote = wn.card;
 					break;
 				}
 			}
 
-			// Fallback in case of rounding issues
-			if (!drawnCard) drawnCard = weightedCards[weightedCards.length - 1].card;
+			if (!drawnNote) drawnNote = weightedNotes[weightedNotes.length - 1].card;
 
-			selectedCards.push(drawnCard);
-			lastDrawnId = drawnCard.id;
-		}
-
-		if (allNotes.length > 0) {
-			const noteTakeCount = Math.max(1, Math.ceil(takeCount * 0.15));
-			lastDrawnId = null;
-			for (let i = 0; i < noteTakeCount; i++) {
-				let totalWeight = 0;
-				weightedNotes.forEach((wn) => {
-					wn.weight = wn.card.id === lastDrawnId && allNotes.length > 1 ? 0 : wn.baseWeight;
-					totalWeight += wn.weight;
-				});
-
-				let randomValue = Math.random() * totalWeight;
-				let drawnNote = null;
-
-				for (const wn of weightedNotes) {
-					randomValue -= wn.weight;
-					if (randomValue <= 0) {
-						drawnNote = wn.card;
-						break;
-					}
-				}
-
-				if (!drawnNote) drawnNote = weightedNotes[weightedNotes.length - 1].card;
-
-				selectedNotes.push(drawnNote);
-				lastDrawnId = drawnNote.id;
-			}
+			lastDrawnId = drawnNote.id;
 		}
 	}
 

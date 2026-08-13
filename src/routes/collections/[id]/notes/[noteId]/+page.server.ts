@@ -39,7 +39,7 @@ export const load: PageServerLoad = async (event) => {
 
 	const note = notes[0];
 	const parsed = matter(note.definition);
-	
+
 	const d1 = event.platform?.env?.DB as D1Database | undefined;
 	let allUniqueTags: string[] = [];
 

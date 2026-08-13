@@ -163,11 +163,21 @@
 
 		{#if step === 'upload'}
 			<div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-				<p class="mb-2">Upload a CSV file containing your flashcards. The first row must be a header with exact names: <code class="rounded bg-gray-100 px-1 font-mono text-xs dark:bg-gray-800">term,definition,tags</code>.</p>
+				<p class="mb-2">
+					Upload a CSV file containing your flashcards. The first row must be a header with exact
+					names: <code class="rounded bg-gray-100 px-1 font-mono text-xs dark:bg-gray-800"
+						>term,definition,tags</code
+					>.
+				</p>
 				<ul class="ml-4 list-disc space-y-1 text-xs">
 					<li><strong>term:</strong> The front of the flashcard.</li>
 					<li><strong>definition:</strong> The back of the flashcard.</li>
-					<li><strong>tags:</strong> (Optional) Categorize your cards. Multiple tags must be comma-separated and wrapped in quotes (e.g., <code class="rounded bg-gray-100 px-1 font-mono dark:bg-gray-800">"verb, noun"</code>). Max 20 tags per card, 16 chars per tag.</li>
+					<li>
+						<strong>tags:</strong> (Optional) Categorize your cards. Multiple tags must be
+						comma-separated and wrapped in quotes (e.g.,
+						<code class="rounded bg-gray-100 px-1 font-mono dark:bg-gray-800">"verb, noun"</code>).
+						Max 20 tags per card, 16 chars per tag.
+					</li>
 				</ul>
 			</div>
 
@@ -237,34 +247,40 @@
 						<div class="text-2xl font-black text-green-600 dark:text-green-400">
 							{validRows.length}
 						</div>
-						<div class="text-xs font-bold tracking-wide uppercase text-green-700 dark:text-green-500">
+						<div
+							class="text-xs font-bold tracking-wide text-green-700 uppercase dark:text-green-500"
+						>
 							Valid
 						</div>
 					</div>
 					{#if isUpdate}
-					<div class="rounded-xl bg-yellow-50 p-3 dark:bg-yellow-900/20">
-						<div class="text-2xl font-black text-yellow-600 dark:text-yellow-400">
-							{updateRows.length}
+						<div class="rounded-xl bg-yellow-50 p-3 dark:bg-yellow-900/20">
+							<div class="text-2xl font-black text-yellow-600 dark:text-yellow-400">
+								{updateRows.length}
+							</div>
+							<div
+								class="text-xs font-bold tracking-wide text-yellow-700 uppercase dark:text-yellow-500"
+							>
+								Updates
+							</div>
 						</div>
-						<div class="text-xs font-bold tracking-wide uppercase text-yellow-700 dark:text-yellow-500">
-							Updates
-						</div>
-					</div>
 					{:else}
-					<div class="rounded-xl bg-yellow-50 p-3 dark:bg-yellow-900/20">
-						<div class="text-2xl font-black text-yellow-600 dark:text-yellow-400">
-							{skippedTerms.length}
+						<div class="rounded-xl bg-yellow-50 p-3 dark:bg-yellow-900/20">
+							<div class="text-2xl font-black text-yellow-600 dark:text-yellow-400">
+								{skippedTerms.length}
+							</div>
+							<div
+								class="text-xs font-bold tracking-wide text-yellow-700 uppercase dark:text-yellow-500"
+							>
+								Skipped
+							</div>
 						</div>
-						<div class="text-xs font-bold tracking-wide uppercase text-yellow-700 dark:text-yellow-500">
-							Skipped
-						</div>
-					</div>
 					{/if}
 					<div class="rounded-xl bg-red-50 p-3 dark:bg-red-900/20">
 						<div class="text-2xl font-black text-red-600 dark:text-red-400">
 							{errors.length}
 						</div>
-						<div class="text-xs font-bold tracking-wide uppercase text-red-700 dark:text-red-500">
+						<div class="text-xs font-bold tracking-wide text-red-700 uppercase dark:text-red-500">
 							Errors
 						</div>
 					</div>
@@ -272,7 +288,7 @@
 						<div class="text-2xl font-black text-blue-600 dark:text-blue-400">
 							{newTags.length + existingTags.length}
 						</div>
-						<div class="text-xs font-bold tracking-wide uppercase text-blue-700 dark:text-blue-500">
+						<div class="text-xs font-bold tracking-wide text-blue-700 uppercase dark:text-blue-500">
 							Tags
 						</div>
 					</div>
@@ -281,26 +297,41 @@
 				<div class="flex max-h-72 flex-col gap-4 overflow-y-auto pr-2">
 					{#if errors.length > 0}
 						<div>
-							<h3 class="mb-2 font-bold text-red-600 dark:text-red-400">Errors ({errors.length})</h3>
-							<div class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-900/10">
+							<h3 class="mb-2 font-bold text-red-600 dark:text-red-400">
+								Errors ({errors.length})
+							</h3>
+							<div
+								class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-900/10"
+							>
 								<ul class="flex flex-col gap-2 text-sm text-red-700 dark:text-red-400">
 									{#each errors as error}
 										<li><span class="font-bold">Row {error.row}:</span> {error.message}</li>
 									{/each}
 								</ul>
-								<p class="mt-3 text-xs text-red-600/70 dark:text-red-400/70">These rows will not be imported.</p>
+								<p class="mt-3 text-xs text-red-600/70 dark:text-red-400/70">
+									These rows will not be imported.
+								</p>
 							</div>
 						</div>
 					{/if}
 
 					{#if skippedTerms.length > 0}
 						<div>
-							<h3 class="mb-2 font-bold text-yellow-600 dark:text-yellow-400">Skipped (Duplicates) ({skippedTerms.length})</h3>
-							<div class="rounded-xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/30 dark:bg-yellow-900/10">
-								<p class="mb-2 text-sm text-yellow-700 dark:text-yellow-400">These terms already exist in the collection:</p>
+							<h3 class="mb-2 font-bold text-yellow-600 dark:text-yellow-400">
+								Skipped (Duplicates) ({skippedTerms.length})
+							</h3>
+							<div
+								class="rounded-xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/30 dark:bg-yellow-900/10"
+							>
+								<p class="mb-2 text-sm text-yellow-700 dark:text-yellow-400">
+									These terms already exist in the collection:
+								</p>
 								<div class="flex flex-wrap gap-1.5">
 									{#each skippedTerms as term}
-										<span class="rounded bg-yellow-200/50 px-2 py-1 text-xs font-semibold text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">{term}</span>
+										<span
+											class="rounded bg-yellow-200/50 px-2 py-1 text-xs font-semibold text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300"
+											>{term}</span
+										>
 									{/each}
 								</div>
 							</div>
@@ -309,16 +340,28 @@
 
 					{#if updateRows.length > 0}
 						<div>
-							<h3 class="mb-2 font-bold text-yellow-600 dark:text-yellow-400">To Update ({updateRows.length})</h3>
-							<div class="rounded-xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/30 dark:bg-yellow-900/10">
-								<ul class="flex max-h-40 flex-col gap-2 overflow-y-auto text-sm text-yellow-800 dark:text-yellow-300">
+							<h3 class="mb-2 font-bold text-yellow-600 dark:text-yellow-400">
+								To Update ({updateRows.length})
+							</h3>
+							<div
+								class="rounded-xl border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-900/30 dark:bg-yellow-900/10"
+							>
+								<ul
+									class="flex max-h-40 flex-col gap-2 overflow-y-auto text-sm text-yellow-800 dark:text-yellow-300"
+								>
 									{#each updateRows as row}
-										<li class="border-b border-yellow-200/50 pb-2 last:border-0 dark:border-yellow-900/30">
+										<li
+											class="border-b border-yellow-200/50 pb-2 last:border-0 dark:border-yellow-900/30"
+										>
 											<div class="mb-1">
-												<span class="font-bold">{row.term}</span> - 
+												<span class="font-bold">{row.term}</span> -
 												{#if row.oldDefinition && row.oldDefinition !== row.definition}
-													<span class="truncate opacity-50 line-through mr-1">{row.oldDefinition}</span>
-													<span class="truncate font-medium text-green-700 dark:text-green-400">{row.definition}</span>
+													<span class="mr-1 truncate line-through opacity-50"
+														>{row.oldDefinition}</span
+													>
+													<span class="truncate font-medium text-green-700 dark:text-green-400"
+														>{row.definition}</span
+													>
 												{:else}
 													<span class="truncate opacity-75">{row.definition}</span>
 												{/if}
@@ -326,10 +369,16 @@
 											{#if row.addedTags?.length > 0 || row.removedTags?.length > 0}
 												<div class="mt-1 flex flex-wrap gap-1">
 													{#each row.addedTags || [] as tag}
-														<span class="rounded bg-green-200/50 px-1.5 py-0.5 text-[10px] font-bold text-green-800 dark:bg-green-900/40 dark:text-green-300">+{tag}</span>
+														<span
+															class="rounded bg-green-200/50 px-1.5 py-0.5 text-[10px] font-bold text-green-800 dark:bg-green-900/40 dark:text-green-300"
+															>+{tag}</span
+														>
 													{/each}
 													{#each row.removedTags || [] as tag}
-														<span class="rounded bg-red-200/50 px-1.5 py-0.5 text-[10px] font-bold text-red-800 line-through opacity-80 dark:bg-red-900/40 dark:text-red-300">-{tag}</span>
+														<span
+															class="rounded bg-red-200/50 px-1.5 py-0.5 text-[10px] font-bold text-red-800 line-through opacity-80 dark:bg-red-900/40 dark:text-red-300"
+															>-{tag}</span
+														>
 													{/each}
 												</div>
 											{/if}
@@ -342,16 +391,29 @@
 
 					{#if newTags.length > 0 || existingTags.length > 0}
 						<div>
-							<h3 class="mb-2 font-bold text-blue-600 dark:text-blue-400">Tags Found ({newTags.length + existingTags.length})</h3>
-							<div class="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10">
+							<h3 class="mb-2 font-bold text-blue-600 dark:text-blue-400">
+								Tags Found ({newTags.length + existingTags.length})
+							</h3>
+							<div
+								class="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/30 dark:bg-blue-900/10"
+							>
 								<div class="flex flex-wrap gap-1.5">
 									{#each newTags as tag}
-										<span title="This is a brand new tag" class="rounded bg-blue-500 px-2 py-1 text-xs font-semibold text-white shadow-sm dark:bg-blue-600">
-											{tag} <span class="ml-0.5 uppercase tracking-wider text-[10px] opacity-75">(New)</span>
+										<span
+											title="This is a brand new tag"
+											class="rounded bg-blue-500 px-2 py-1 text-xs font-semibold text-white shadow-sm dark:bg-blue-600"
+										>
+											{tag}
+											<span class="ml-0.5 text-[10px] tracking-wider uppercase opacity-75"
+												>(New)</span
+											>
 										</span>
 									{/each}
 									{#each existingTags as tag}
-										<span title="This tag already exists in the collection" class="rounded bg-gray-200/70 px-2 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+										<span
+											title="This tag already exists in the collection"
+											class="rounded bg-gray-200/70 px-2 py-1 text-xs font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+										>
 											{tag}
 										</span>
 									{/each}
@@ -362,11 +424,20 @@
 
 					{#if validRows.length > 0}
 						<div>
-							<h3 class="mb-2 font-bold text-green-600 dark:text-green-400">Ready to Import ({validRows.length})</h3>
-							<div class="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/30 dark:bg-green-900/10">
-								<ul class="flex max-h-40 flex-col gap-2 overflow-y-auto text-sm text-green-800 dark:text-green-300">
+							<h3 class="mb-2 font-bold text-green-600 dark:text-green-400">
+								Ready to Import ({validRows.length})
+							</h3>
+							<div
+								class="rounded-xl border border-green-200 bg-green-50 p-4 dark:border-green-900/30 dark:bg-green-900/10"
+							>
+								<ul
+									class="flex max-h-40 flex-col gap-2 overflow-y-auto text-sm text-green-800 dark:text-green-300"
+								>
 									{#each validRows as row}
-										<li><span class="font-bold">{row.term}</span> - <span class="truncate opacity-75">{row.definition}</span></li>
+										<li>
+											<span class="font-bold">{row.term}</span> -
+											<span class="truncate opacity-75">{row.definition}</span>
+										</li>
 									{/each}
 								</ul>
 							</div>
@@ -379,7 +450,7 @@
 				method="post"
 				action="?/importCsv"
 				use:enhance={handleImportSubmit}
-				class="flex justify-end gap-3 mt-4"
+				class="mt-4 flex justify-end gap-3"
 			>
 				<input type="hidden" name="validRows" value={validRowsJson} />
 				<input type="hidden" name="updateRows" value={updateRowsJson} />
