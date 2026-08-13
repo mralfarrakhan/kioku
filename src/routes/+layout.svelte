@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import DisclaimerModal from '$lib/components/DisclaimerModal.svelte';
 	import { resolve } from '$app/paths';
 
 	let { data, children }: { data: LayoutServerData; children: import('svelte').Snippet } = $props();
@@ -158,3 +159,4 @@
 {/if}
 
 <Toast />
+<DisclaimerModal hasAgreed={data.hasAgreedToDisclaimer} />

@@ -2,6 +2,7 @@ import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async (event) => {
 	return {
-		user: event.locals.user
+		user: event.locals.user,
+		hasAgreedToDisclaimer: event.cookies.get('kioku_disclaimer_agreed') === 'true'
 	};
 };
