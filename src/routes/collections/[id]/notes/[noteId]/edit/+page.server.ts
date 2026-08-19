@@ -70,7 +70,7 @@ export const actions: Actions = {
 		try {
 			parsed = matter(definition);
 		} catch (e: any) {
-			return fail(400, { message: \`Invalid YAML frontmatter: \${e.message}\` });
+			return fail(400, { message: `Invalid YAML frontmatter: ${e.message}` });
 		}
 
 		let term = parsed.data.title;
