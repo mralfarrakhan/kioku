@@ -387,50 +387,48 @@
 								? 'border-green-500'
 								: 'border-red-500'} sm:max-w-none sm:animate-none sm:flex-row sm:justify-center sm:gap-6 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:dark:bg-transparent"
 						>
-							{#if currentCard.type !== 'note'}
-								<div
-									class="flex items-center gap-2 text-2xl font-extrabold sm:text-xl {isCorrect
-										? 'animate-bounce text-green-500'
-										: 'text-red-500'}"
-								>
-									{#if isCorrect}
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="32"
-											height="32"
-											class="sm:h-7 sm:w-7"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="3"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path
-												d="m9 11 3 3L22 4"
-											/></svg
-										>
-										Awesome!
-									{:else}
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											width="32"
-											height="32"
-											class="sm:h-7 sm:w-7"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="3"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-											><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path
-												d="m9 9 6 6"
-											/></svg
-										>
-										Correct answer:
-										{currentCard.correctAnswer}
-									{/if}
-								</div>
-							{/if}
+							<div
+								class="flex items-center gap-2 text-2xl font-extrabold sm:text-xl {isCorrect
+									? 'animate-bounce text-green-500'
+									: 'text-red-500'}"
+							>
+								{#if isCorrect}
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="32"
+										height="32"
+										class="sm:h-7 sm:w-7"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="3"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><path
+											d="m9 11 3 3L22 4"
+										/></svg
+									>
+									Awesome!
+								{:else}
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="32"
+										height="32"
+										class="sm:h-7 sm:w-7"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="3"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path
+											d="m9 9 6 6"
+										/></svg
+									>
+									Correct answer:
+									{currentCard.correctAnswer}
+								{/if}
+							</div>
 
 							{#if oldScore !== null}
 								<div
