@@ -66,7 +66,12 @@ export const actions: Actions = {
 			return fail(400, { message: 'Content is required' });
 		}
 
-		const parsed = matter(definition);
+		let parsed;
+		try {
+			parsed = matter(definition);
+		} catch (e: any) {
+			return fail(400, { message: \`Invalid YAML frontmatter: \${e.message}\` });
+		}
 
 		let term = parsed.data.title;
 		if (!term) {
