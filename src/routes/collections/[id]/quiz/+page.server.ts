@@ -117,30 +117,45 @@ export const load: PageServerLoad = async (event) => {
 
 
 
+	// D1 has a max parameter limit of 100 per query. We chunk the IDs to avoid errors.
+	const chunkSize = 80;
+	const idChunks = [];
+	for (let i = 0; i < selectedIds.length; i += chunkSize) {
+		idChunks.push(selectedIds.slice(i, i + chunkSize));
+	}
+
 	// Fetch full data for selected IDs
-	const bufferedResults = await db
-		.select({
-			card: flashcard,
-			progress: userFlashcardProgress
-		})
-		.from(flashcard)
-		.leftJoin(
-			userFlashcardProgress,
-			and(
-				eq(userFlashcardProgress.flashcardId, flashcard.id),
-				eq(userFlashcardProgress.userId, event.locals.user.id)
-			)
+	const bufferedResults = (await Promise.all(
+		idChunks.map(chunk => 
+			db
+				.select({
+					card: flashcard,
+					progress: userFlashcardProgress
+				})
+				.from(flashcard)
+				.leftJoin(
+					userFlashcardProgress,
+					and(
+						eq(userFlashcardProgress.flashcardId, flashcard.id),
+						eq(userFlashcardProgress.userId, event.locals.user.id)
+					)
+				)
+				.where(inArray(flashcard.id, chunk))
 		)
-		.where(inArray(flashcard.id, selectedIds));
+	)).flat();
 
 	// Fetch tags for selected IDs to attach to cards
-	const tagsResult = await db.select({
-		flashcardId: flashcardTag.flashcardId,
-		tagName: tag.name
-	})
-	.from(flashcardTag)
-	.innerJoin(tag, eq(flashcardTag.tagId, tag.id))
-	.where(inArray(flashcardTag.flashcardId, selectedIds));
+	const tagsResult = (await Promise.all(
+		idChunks.map(chunk =>
+			db.select({
+				flashcardId: flashcardTag.flashcardId,
+				tagName: tag.name
+			})
+			.from(flashcardTag)
+			.innerJoin(tag, eq(flashcardTag.tagId, tag.id))
+			.where(inArray(flashcardTag.flashcardId, chunk))
+		)
+	)).flat();
 
 	const tagsMap = new Map<string, string[]>();
 	for (const row of tagsResult) {
