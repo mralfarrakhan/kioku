@@ -35,8 +35,10 @@
 		dialog?.close();
 	}
 
+	let isLoading = $state(false);
+
 	function handleStart() {
-		close();
+		isLoading = true;
 		let count = sessionLength === 'custom' ? customSessionLength : sessionLength;
 		let url = `/collections/${collectionId}/quiz?count=${count}`;
 		if (selectedTags.length > 0) {
@@ -48,7 +50,10 @@
 		if (fullRandomMode) {
 			url += `&mode=random`;
 		}
-		goto(url);
+		goto(url).then(() => {
+			isLoading = false;
+			close();
+		});
 	}
 </script>
 
@@ -217,9 +222,15 @@
 			<button
 				type="button"
 				onclick={handleStart}
-				class="rounded-xl bg-blue-500 px-5 py-2.5 font-bold text-white shadow-md transition hover:bg-blue-600 hover:shadow-lg active:translate-y-px active:shadow-sm"
+				disabled={isLoading}
+				class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-5 py-2.5 font-bold text-white shadow-md transition hover:bg-blue-600 hover:shadow-lg active:translate-y-px active:shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
 			>
-				Start Quiz
+				{#if isLoading}
+					<svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+					Starting...
+				{:else}
+					Start Quiz
+				{/if}
 			</button>
 		</div>
 	</div>

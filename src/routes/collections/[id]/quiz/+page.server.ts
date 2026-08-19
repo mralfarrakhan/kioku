@@ -1,7 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
-import { collection, flashcard, userFlashcardProgress } from '$lib/server/db/schema';
+import { collection, flashcard, userFlashcardProgress, tag, flashcardTag } from '$lib/server/db/schema';
 import { eq, and, desc, inArray, or, like, sql } from 'drizzle-orm';
 import { QUIZ_CONFIG } from '$lib/config';
 
@@ -60,13 +60,64 @@ export const load: PageServerLoad = async (event) => {
 			.map((t) => t.trim())
 			.filter(Boolean);
 		if (tagsList.length > 0) {
-			const tagConditions = tagsList.map((tag) => like(flashcard.tags, `%"${tag}"%`));
+			const tagConditions = tagsList.map(
+				(tagName) => sql`EXISTS (SELECT 1 FROM flashcard_tag JOIN tag ON tag.id = flashcard_tag.tag_id WHERE flashcard_tag.flashcard_id = ${flashcard.id} AND tag.name = ${tagName})`
+			);
 			conditions.push(or(...tagConditions) as any);
 		}
 	}
 
-	// Fetch buffered highly relevant items
 	const now = Date.now();
+	let selectedIds: string[] = [];
+	
+	if (isRandomMode) {
+		const allIds = await db
+			.select({ id: flashcard.id })
+			.from(flashcard)
+			.leftJoin(
+				userFlashcardProgress,
+				and(
+					eq(userFlashcardProgress.flashcardId, flashcard.id),
+					eq(userFlashcardProgress.userId, event.locals.user.id)
+				)
+			)
+			.where(and(...conditions as any[]));
+		selectedIds = shuffle(allIds).slice(0, bufferSize).map(r => r.id);
+	} else {
+		// Order by SRS priority without using expensive RANDOM()
+		const bufferedIds = await db
+			.select({ id: flashcard.id })
+			.from(flashcard)
+			.leftJoin(
+				userFlashcardProgress,
+				and(
+					eq(userFlashcardProgress.flashcardId, flashcard.id),
+					eq(userFlashcardProgress.userId, event.locals.user.id)
+				)
+			)
+			.where(and(...conditions as any[]))
+			.orderBy(
+				sql`
+					CASE 
+						WHEN ${userFlashcardProgress.id} IS NULL THEN 1 
+						WHEN ${userFlashcardProgress.nextReviewAt} <= ${now} THEN 2 
+						ELSE 3 
+					END ASC,
+					${flashcard.id} DESC
+				`
+			)
+			.limit(bufferSize * 5);
+		
+		selectedIds = shuffle(bufferedIds).slice(0, bufferSize).map(r => r.id);
+	}
+
+	if (selectedIds.length === 0) {
+		return redirect(302, `/collections/${id}`);
+	}
+
+
+
+	// Fetch full data for selected IDs
 	const bufferedResults = await db
 		.select({
 			card: flashcard,
@@ -80,22 +131,29 @@ export const load: PageServerLoad = async (event) => {
 				eq(userFlashcardProgress.userId, event.locals.user.id)
 			)
 		)
-		.where(and(...conditions as any[]))
-		.orderBy(
-			isRandomMode
-				? sql`RANDOM()`
-				: sql`
-					CASE 
-						WHEN ${userFlashcardProgress.id} IS NULL THEN 1 
-						WHEN ${userFlashcardProgress.nextReviewAt} <= ${now} THEN 2 
-						ELSE 3 
-					END ASC, 
-					RANDOM()
-				`
-		)
-		.limit(bufferSize);
+		.where(inArray(flashcard.id, selectedIds));
 
-	const allItems = bufferedResults.map((r) => r.card);
+	// Fetch tags for selected IDs to attach to cards
+	const tagsResult = await db.select({
+		flashcardId: flashcardTag.flashcardId,
+		tagName: tag.name
+	})
+	.from(flashcardTag)
+	.innerJoin(tag, eq(flashcardTag.tagId, tag.id))
+	.where(inArray(flashcardTag.flashcardId, selectedIds));
+
+	const tagsMap = new Map<string, string[]>();
+	for (const row of tagsResult) {
+		if (!tagsMap.has(row.flashcardId)) tagsMap.set(row.flashcardId, []);
+		tagsMap.get(row.flashcardId)!.push(row.tagName);
+	}
+
+	// Attach tags to cards
+	const allItems = bufferedResults.map((r) => {
+		const c = { ...r.card, tags: tagsMap.get(r.card.id) || [] };
+		return c;
+	});
+
 	const allCards = allItems.filter((i) => i.type === 'flashcard');
 	const allNotes = excludeNotes ? [] : allItems.filter((i) => i.type === 'note');
 

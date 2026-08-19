@@ -2,6 +2,7 @@
 	import './layout.css';
 	import type { LayoutServerData } from './$types';
 	import { page } from '$app/state';
+	import { navigating } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 	import DisclaimerModal from '$lib/components/DisclaimerModal.svelte';
@@ -13,6 +14,12 @@
 <svelte:head>
 	<link rel="icon" href="favicon.png" />
 </svelte:head>
+
+{#if $navigating}
+	<div class="fixed top-0 left-0 z-[100] h-1 w-full overflow-hidden bg-blue-100 dark:bg-blue-900/30">
+		<div class="absolute left-0 top-0 h-full w-1/3 animate-progress bg-blue-500 rounded-full"></div>
+	</div>
+{/if}
 
 {#if data.user}
 	<div
@@ -160,3 +167,13 @@
 
 <Toast />
 <DisclaimerModal hasAgreed={data.hasAgreedToDisclaimer} />
+
+<style>
+	@keyframes progress {
+		0% { transform: translateX(-100%); }
+		100% { transform: translateX(300%); }
+	}
+	.animate-progress {
+		animation: progress 1s infinite linear;
+	}
+</style>

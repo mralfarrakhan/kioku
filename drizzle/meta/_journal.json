@@ -99,6 +99,13 @@
       "when": 1786631838079,
       "tag": "0013_shocking_spirit",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1787122533173,
+      "tag": "0014_boring_magneto",
+      "breakpoints": true
     }
   ]
 }

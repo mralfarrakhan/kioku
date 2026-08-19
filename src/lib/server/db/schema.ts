@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, real } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text, real, primaryKey } from 'drizzle-orm/sqlite-core';
 import { user } from './auth.schema';
 import { sql } from 'drizzle-orm';
 
@@ -40,10 +40,6 @@ export const flashcard = sqliteTable('flashcard', {
 	type: text('type', { enum: ['flashcard', 'note'] })
 		.notNull()
 		.default('flashcard'),
-	tags: text('tags', { mode: 'json' })
-		.$type<string[]>()
-		.notNull()
-		.default(sql`'[]'`),
 	metadata: text('metadata', { mode: 'json' })
 		.$type<Record<string, any>>()
 		.notNull()
@@ -55,6 +51,30 @@ export const flashcard = sqliteTable('flashcard', {
 		.$onUpdate(() => new Date())
 		.notNull()
 });
+
+export const tag = sqliteTable('tag', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	name: text('name').notNull().unique(),
+});
+
+export const flashcardTag = sqliteTable(
+	'flashcard_tag',
+	{
+		flashcardId: text('flashcard_id')
+			.notNull()
+			.references(() => flashcard.id, { onDelete: 'cascade' }),
+		tagId: text('tag_id')
+			.notNull()
+			.references(() => tag.id, { onDelete: 'cascade' })
+	},
+	(t) => {
+		return {
+			pk: primaryKey({ columns: [t.flashcardId, t.tagId] })
+		};
+	}
+);
 
 export const flashcardFts = sqliteTable('flashcard_fts', {
 	rowid: integer('rowid').primaryKey(),

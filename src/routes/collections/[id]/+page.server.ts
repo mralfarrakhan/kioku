@@ -2,8 +2,9 @@ import { redirect, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { collection, flashcard, userFlashcardProgress, flashcardFts } from '$lib/server/db/schema';
-import { eq, or, and, desc, asc, sql, count } from 'drizzle-orm';
+import { eq, or, and, desc, asc, sql, count, inArray } from 'drizzle-orm';
 import { APP_CONFIG } from '$lib/config';
+import { tag, flashcardTag } from '$lib/server/db/schema';
 
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
@@ -49,7 +50,7 @@ export const load: PageServerLoad = async (event) => {
 			.filter(Boolean);
 		if (tagsList.length > 0) {
 			const tagConditions = tagsList.map(
-				(tag) => sql`EXISTS (SELECT 1 FROM json_each(${flashcard.tags}) WHERE value = ${tag})`
+				(tagName) => sql`EXISTS (SELECT 1 FROM flashcard_tag JOIN tag ON tag.id = flashcard_tag.tag_id WHERE flashcard_tag.flashcard_id = ${flashcard.id} AND tag.name = ${tagName})`
 			);
 			conditions.push(and(...tagConditions)!);
 		}
@@ -100,7 +101,6 @@ export const load: PageServerLoad = async (event) => {
 			term: flashcard.term,
 			definition: flashcard.definition,
 			type: flashcard.type,
-			tags: flashcard.tags,
 			metadata: flashcard.metadata,
 			collectionId: flashcard.collectionId,
 			createdAt: flashcard.createdAt,
@@ -160,11 +160,37 @@ export const load: PageServerLoad = async (event) => {
 	const totalItems = countResult[0].value;
 	const totalPages = Math.ceil(totalItems / pageSize) || 1;
 
-	const flashcards = await baseQuery
+	const flashcardsRaw = await baseQuery
 		.where(and(...conditions))
 		.orderBy(orderClause)
 		.limit(pageSize)
 		.offset((page - 1) * pageSize);
+
+	// Fetch tags for these flashcards
+
+	
+	const flashcardIds = flashcardsRaw.map(f => f.id);
+	let tagsMap = new Map<string, string[]>();
+	
+	if (flashcardIds.length > 0) {
+		const tagsResult = await db.select({
+			flashcardId: flashcardTag.flashcardId,
+			tagName: tag.name
+		})
+		.from(flashcardTag)
+		.innerJoin(tag, eq(flashcardTag.tagId, tag.id))
+		.where(inArray(flashcardTag.flashcardId, flashcardIds));
+
+		for (const row of tagsResult) {
+			if (!tagsMap.has(row.flashcardId)) tagsMap.set(row.flashcardId, []);
+			tagsMap.get(row.flashcardId)!.push(row.tagName);
+		}
+	}
+
+	const flashcards = flashcardsRaw.map(f => ({
+		...f,
+		tags: tagsMap.get(f.id) || []
+	}));
 
 	// Fetch type counts based on current filters (excluding the itemType filter itself, or including it?
 	// If we include it, then filtering by "Flashcards" will show 0 Notes. It's usually better to show counts of what's available *with the other filters*.
@@ -201,45 +227,20 @@ export const load: PageServerLoad = async (event) => {
 		note: typeCountsResult.find((r) => r.type === 'note')?.value || 0
 	};
 
-	const d1 = event.platform?.env?.DB as D1Database | undefined;
-	let allUniqueTags: string[] = [];
-	let tagCounts: { tag: string; count: number }[] = [];
+	const uniqueTagsResult = await db.select({ name: tag.name }).from(tag).orderBy(tag.name);
+	const allUniqueTags = uniqueTagsResult.map(t => t.name);
 
-	if (d1) {
-		const result = await d1
-			.prepare(
-				`SELECT DISTINCT json_each.value as tag FROM flashcard, json_each(flashcard.tags) WHERE flashcard.collection_id = ?`
-			)
-			.bind(id)
-			.all<{ tag: string }>();
-		allUniqueTags = result.results.map((r) => r.tag).filter(Boolean);
+	const countsResult = await db.select({
+		name: tag.name,
+		count: count()
+	})
+	.from(tag)
+	.innerJoin(flashcardTag, eq(tag.id, flashcardTag.tagId))
+	.innerJoin(flashcard, eq(flashcardTag.flashcardId, flashcard.id))
+	.where(and(eq(flashcard.collectionId, id), eq(flashcard.type, 'flashcard')))
+	.groupBy(tag.name);
 
-		const resultCounts = await d1
-			.prepare(
-				`SELECT json_each.value as tag, COUNT(*) as count FROM flashcard, json_each(flashcard.tags) WHERE flashcard.collection_id = ? AND flashcard.type = 'flashcard' GROUP BY json_each.value`
-			)
-			.bind(id)
-			.all<{ tag: string; count: number }>();
-		tagCounts = resultCounts.results;
-	} else {
-		// Fallback for environment without D1 bound (e.g. some dev setups)
-		const allTagsResult = await db
-			.select({ tags: flashcard.tags, type: flashcard.type })
-			.from(flashcard)
-			.where(eq(flashcard.collectionId, id));
-
-		allUniqueTags = Array.from(new Set(allTagsResult.flatMap((c) => c.tags || [])));
-
-		const countsMap = new Map<string, number>();
-		for (const card of allTagsResult) {
-			if (card.type === 'flashcard') {
-				for (const tag of card.tags || []) {
-					countsMap.set(tag, (countsMap.get(tag) || 0) + 1);
-				}
-			}
-		}
-		tagCounts = Array.from(countsMap.entries()).map(([tag, count]) => ({ tag, count }));
-	}
+	const tagCounts = countsResult.map(r => ({ tag: r.name, count: r.count }));
 
 	return {
 		collection: coll,
@@ -361,13 +362,25 @@ export const actions: Actions = {
 		}
 
 		try {
-			await db.insert(flashcard).values({
+			const result = await db.insert(flashcard).values({
 				collectionId: id,
 				term: term.trim(),
 				definition: definition.trim(),
-				type,
-				tags
-			});
+				type
+			}).returning({ id: flashcard.id });
+			
+			const newId = result[0].id;
+			
+			if (tags.length > 0) {
+				for (const t of tags) {
+					await db.insert(tag).values({ name: t }).onConflictDoNothing();
+				}
+				const tagRecords = await db.select({ id: tag.id }).from(tag).where(inArray(tag.name, tags));
+				if (tagRecords.length > 0) {
+					await db.insert(flashcardTag).values(tagRecords.map(tr => ({ flashcardId: newId, tagId: tr.id })));
+				}
+			}
+
 			return { success: true };
 		} catch (e) {
 			return fail(500, { message: 'Failed to create flashcard' });
@@ -439,8 +452,21 @@ export const actions: Actions = {
 		try {
 			await db
 				.update(flashcard)
-				.set({ term, definition, type, tags })
+				.set({ term, definition, type })
 				.where(and(eq(flashcard.id, flashcardId), eq(flashcard.collectionId, collectionId)));
+
+			await db.delete(flashcardTag).where(eq(flashcardTag.flashcardId, flashcardId));
+			
+			if (tags.length > 0) {
+				for (const t of tags) {
+					await db.insert(tag).values({ name: t }).onConflictDoNothing();
+				}
+				const tagRecords = await db.select({ id: tag.id }).from(tag).where(inArray(tag.name, tags));
+				if (tagRecords.length > 0) {
+					await db.insert(flashcardTag).values(tagRecords.map(tr => ({ flashcardId, tagId: tr.id })));
+				}
+			}
+
 			return { success: true };
 		} catch (e) {
 			return fail(500, { message: 'Failed to update flashcard' });
@@ -693,30 +719,65 @@ export const actions: Actions = {
 
 		try {
 			for (let i = 0; i < validRows.length; i += batchSize) {
-				const batch = validRows.slice(i, i + batchSize).map((row) => ({
+				const chunk = validRows.slice(i, i + batchSize);
+				const batch = chunk.map((row) => ({
 					collectionId,
 					term: row.term,
 					definition: row.definition,
-					type: 'flashcard' as const,
-					tags: row.tags || []
+					type: 'flashcard' as const
 				}));
 
 				if (batch.length > 0) {
-					await db.insert(flashcard).values(batch);
+					const inserted = await db.insert(flashcard).values(batch).returning({ id: flashcard.id });
+					
+					const allTags = new Set<string>();
+					chunk.forEach(r => (r.tags || []).forEach((t: string) => allTags.add(t)));
+					
+					if (allTags.size > 0) {
+						for (const t of allTags) {
+							await db.insert(tag).values({ name: t }).onConflictDoNothing();
+						}
+						const tagRecords = await db.select({ id: tag.id, name: tag.name }).from(tag).where(inArray(tag.name, Array.from(allTags)));
+						const tagMap = new Map(tagRecords.map(t => [t.name, t.id]));
+						
+						const ftRecords: { flashcardId: string, tagId: string }[] = [];
+						chunk.forEach((row, idx) => {
+							const newId = inserted[idx].id;
+							(row.tags || []).forEach((t: string) => {
+								const tagId = tagMap.get(t);
+								if (tagId) ftRecords.push({ flashcardId: newId, tagId });
+							});
+						});
+						
+						for (let j = 0; j < ftRecords.length; j += 40) {
+							await db.insert(flashcardTag).values(ftRecords.slice(j, j + 40));
+						}
+					}
 				}
 			}
 
 			if (updateRows.length > 0) {
-				const updatePromises = updateRows.map((row) =>
-					db
+				const updatePromises = updateRows.map(async (row) => {
+					await db
 						.update(flashcard)
 						.set({
 							term: row.term,
-							definition: row.definition,
-							tags: row.tags || []
+							definition: row.definition
 						})
-						.where(and(eq(flashcard.id, row.id), eq(flashcard.collectionId, collectionId)))
-				);
+						.where(and(eq(flashcard.id, row.id), eq(flashcard.collectionId, collectionId)));
+						
+					await db.delete(flashcardTag).where(eq(flashcardTag.flashcardId, row.id));
+					
+					if (row.tags && row.tags.length > 0) {
+						for (const t of row.tags) {
+							await db.insert(tag).values({ name: t }).onConflictDoNothing();
+						}
+						const tagRecords = await db.select({ id: tag.id }).from(tag).where(inArray(tag.name, row.tags));
+						if (tagRecords.length > 0) {
+							await db.insert(flashcardTag).values(tagRecords.map(tr => ({ flashcardId: row.id, tagId: tr.id })));
+						}
+					}
+				});
 				await Promise.all(updatePromises);
 			}
 
