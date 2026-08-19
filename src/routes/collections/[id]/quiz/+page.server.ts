@@ -212,60 +212,49 @@ export const load: PageServerLoad = async (event) => {
 	let selectedCards: typeof allCards = [];
 	let selectedNotes: typeof allNotes = [];
 
-	// N items: Weighted random sample with replacement
-	let lastDrawnId: string | null = null;
+	const sampleWithoutReplacement = (pool: typeof weightedCards, count: number) => {
+		const result = [];
+		let available = [...pool];
+		let lastId: string | null = null;
 
-	for (let i = 0; i < takeCount; i++) {
-		let totalWeight = 0;
-		// Temporarily zero the weight of the last drawn card if there's more than 1 card to avoid consecutive repeats
-		weightedCards.forEach((wc) => {
-			wc.weight = wc.card.id === lastDrawnId && allCards.length > 1 ? 0 : wc.baseWeight;
-			totalWeight += wc.weight;
-		});
-
-		let randomValue = Math.random() * totalWeight;
-		let drawnCard = null;
-
-		for (const wc of weightedCards) {
-			randomValue -= wc.weight;
-			if (randomValue <= 0) {
-				drawnCard = wc.card;
-				break;
+		for (let i = 0; i < count; i++) {
+			if (available.length === 0) {
+				// We ran out of unique items, we must sample with replacement now
+				// Replenish the pool, but omit the last drawn item if possible to avoid consecutive repeats
+				available = pool
+					.filter((p) => (pool.length > 1 ? p.card.id !== lastId : true))
+					.map((p) => ({ ...p }));
 			}
-		}
 
-		// Fallback in case of rounding issues
-		if (!drawnCard) drawnCard = weightedCards[weightedCards.length - 1].card;
-
-		selectedCards.push(drawnCard);
-		lastDrawnId = drawnCard.id;
-	}
-
-	if (allNotes.length > 0) {
-		const noteTakeCount = Math.max(1, Math.ceil(takeCount * 0.15));
-		lastDrawnId = null;
-		for (let i = 0; i < noteTakeCount; i++) {
 			let totalWeight = 0;
-			weightedNotes.forEach((wn) => {
-				wn.weight = wn.card.id === lastDrawnId && allNotes.length > 1 ? 0 : wn.baseWeight;
-				totalWeight += wn.weight;
-			});
+			available.forEach((a) => (totalWeight += a.weight));
 
 			let randomValue = Math.random() * totalWeight;
-			let drawnNote = null;
+			let drawnIndex = available.length - 1;
 
-			for (const wn of weightedNotes) {
-				randomValue -= wn.weight;
+			for (let j = 0; j < available.length; j++) {
+				randomValue -= available[j].weight;
 				if (randomValue <= 0) {
-					drawnNote = wn.card;
+					drawnIndex = j;
 					break;
 				}
 			}
 
-			if (!drawnNote) drawnNote = weightedNotes[weightedNotes.length - 1].card;
+			const drawn = available[drawnIndex];
+			result.push(drawn.card);
+			lastId = drawn.card.id;
 
-			lastDrawnId = drawnNote.id;
+			// Remove the drawn item so it isn't picked again (unless pool depletes)
+			available.splice(drawnIndex, 1);
 		}
+		return result;
+	};
+
+	selectedCards = sampleWithoutReplacement(weightedCards, takeCount);
+
+	if (allNotes.length > 0) {
+		const noteTakeCount = Math.max(1, Math.ceil(takeCount * 0.15));
+		selectedNotes = sampleWithoutReplacement(weightedNotes, noteTakeCount);
 	}
 
 	// Generate distractors for each card
