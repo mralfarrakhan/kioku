@@ -584,7 +584,7 @@
 								</h3>
 								{#if card.metadata?.description}
 									<p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-										{card.metadata.description}
+										{@html parseInlineMarkdown(card.metadata.description)}
 									</p>
 								{/if}
 								{#if card.tags && card.tags.length > 0}

@@ -169,7 +169,7 @@
 
 						{#if previewData.metadata.description}
 							<div class="mb-6 text-xl text-gray-600 dark:text-gray-400">
-								{previewData.metadata.description}
+								{@html parseInlineMarkdown(previewData.metadata.description)}
 							</div>
 						{/if}
 

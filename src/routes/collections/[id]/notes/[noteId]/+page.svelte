@@ -85,7 +85,7 @@
 
 			{#if data.note.metadata?.description}
 				<div class="mb-6 text-xl text-gray-600 dark:text-gray-400">
-					{data.note.metadata.description}
+					{@html parseInlineMarkdown(data.note.metadata.description)}
 				</div>
 			{/if}
 
