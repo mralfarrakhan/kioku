@@ -525,21 +525,42 @@ export const actions: Actions = {
 		const db = getDb(event.platform?.env?.DB as D1Database);
 
 		// Fetch existing terms for duplicates check
-		const existingCards = await db
+		const existingCardsRaw = await db
 			.select({
 				id: flashcard.id,
 				term: flashcard.term,
-				tags: flashcard.tags,
 				definition: flashcard.definition
 			})
 			.from(flashcard)
 			.where(eq(flashcard.collectionId, collectionId));
 
+		const existingCardsTags = await db
+			.select({
+				flashcardId: flashcardTag.flashcardId,
+				tagName: tag.name
+			})
+			.from(flashcardTag)
+			.innerJoin(tag, eq(flashcardTag.tagId, tag.id))
+			.innerJoin(flashcard, eq(flashcardTag.flashcardId, flashcard.id))
+			.where(eq(flashcard.collectionId, collectionId));
+
+		const tagsByCard = new Map<string, string[]>();
+		for (const t of existingCardsTags) {
+			const arr = tagsByCard.get(t.flashcardId) || [];
+			arr.push(t.tagName);
+			tagsByCard.set(t.flashcardId, arr);
+		}
+
+		const existingCards = existingCardsRaw.map((c) => ({
+			...c,
+			tags: tagsByCard.get(c.id) || []
+		}));
+
 		const existingTermsMap = new Map<string, { id: string; tags: string[]; definition: string }>();
 		existingCards.forEach((c) => {
 			existingTermsMap.set(c.term.trim().toLowerCase(), {
 				id: c.id,
-				tags: c.tags || [],
+				tags: c.tags,
 				definition: c.definition
 			});
 		});

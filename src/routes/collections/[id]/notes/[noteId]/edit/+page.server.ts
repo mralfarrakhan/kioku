@@ -1,8 +1,8 @@
 import { redirect, fail, error } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
-import { collection, flashcard } from '$lib/server/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { collection, flashcard, tag, flashcardTag } from '$lib/server/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import matter from 'gray-matter';
 
 export const load: PageServerLoad = async (event) => {
@@ -37,24 +37,14 @@ export const load: PageServerLoad = async (event) => {
 		throw error(404, 'Note not found');
 	}
 
-	const d1 = event.platform?.env?.DB as D1Database | undefined;
-	let allUniqueTags: string[] = [];
+	const allTagsResult = await db
+		.select({ name: tag.name })
+		.from(tag)
+		.innerJoin(flashcardTag, eq(tag.id, flashcardTag.tagId))
+		.innerJoin(flashcard, eq(flashcardTag.flashcardId, flashcard.id))
+		.where(eq(flashcard.collectionId, id));
 
-	if (d1) {
-		const result = await d1
-			.prepare(
-				`SELECT DISTINCT json_each.value as tag FROM flashcard, json_each(flashcard.tags) WHERE flashcard.collection_id = ?`
-			)
-			.bind(id)
-			.all<{ tag: string }>();
-		allUniqueTags = result.results.map((r) => r.tag).filter(Boolean);
-	} else {
-		const allTagsResult = await db
-			.select({ tags: flashcard.tags })
-			.from(flashcard)
-			.where(eq(flashcard.collectionId, id));
-		allUniqueTags = Array.from(new Set(allTagsResult.flatMap((c) => c.tags || [])));
-	}
+	const allUniqueTags = Array.from(new Set(allTagsResult.map((t) => t.name)));
 
 	return {
 		collection: coll,
@@ -124,11 +114,22 @@ export const actions: Actions = {
 				.set({
 					term: term.trim(),
 					definition: definition.trim(),
-					tags,
 					metadata,
 					updatedAt: new Date()
 				})
 				.where(and(eq(flashcard.id, noteId), eq(flashcard.collectionId, id)));
+				
+			await db.delete(flashcardTag).where(eq(flashcardTag.flashcardId, noteId));
+			
+			if (tags.length > 0) {
+				for (const t of tags) {
+					await db.insert(tag).values({ name: t }).onConflictDoNothing();
+				}
+				const tagRecords = await db.select({ id: tag.id }).from(tag).where(inArray(tag.name, tags));
+				if (tagRecords.length > 0) {
+					await db.insert(flashcardTag).values(tagRecords.map(tr => ({ flashcardId: noteId, tagId: tr.id })));
+				}
+			}
 		} catch (e) {
 			return fail(500, { message: 'Failed to update note' });
 		}
