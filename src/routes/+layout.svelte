@@ -103,7 +103,7 @@
 		</aside>
 
 		<!-- Main Content Area -->
-		<main class="flex-1 overflow-y-auto pb-20 md:pb-0">
+		<main class="flex-1 overflow-y-auto {page.url.pathname.endsWith('/quiz') ? '' : 'pb-20'} md:pb-0">
 			<div class="mx-auto max-w-4xl p-4 md:p-8">
 				{@render children()}
 			</div>
@@ -111,7 +111,7 @@
 
 		<!-- Mobile Bottom Bar -->
 		<nav
-			class="pb-safe fixed bottom-0 z-50 flex w-full justify-around border-t border-gray-200 bg-white p-3 transition-colors duration-200 md:hidden dark:border-gray-800 dark:bg-gray-900"
+			class="pb-safe fixed bottom-0 z-50 flex w-full justify-around border-t border-gray-200 bg-white p-3 transition-colors duration-200 md:hidden dark:border-gray-800 dark:bg-gray-900 {page.url.pathname.endsWith('/quiz') ? 'hidden' : ''}"
 		>
 			<a
 				href={resolve('/')}
