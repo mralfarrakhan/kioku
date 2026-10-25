@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, real, primaryKey } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text, real, primaryKey, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { user } from './auth.schema';
 import { sql } from 'drizzle-orm';
 
@@ -26,7 +26,9 @@ export const collection = sqliteTable('collection', {
 	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
 		.$onUpdate(() => new Date())
 		.notNull()
-});
+}, (t) => ({
+	userIdIdx: index('collection_user_id_idx').on(t.userId)
+}));
 
 export const flashcard = sqliteTable('flashcard', {
 	id: text('id')
@@ -50,7 +52,10 @@ export const flashcard = sqliteTable('flashcard', {
 	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
 		.$onUpdate(() => new Date())
 		.notNull()
-});
+}, (t) => ({
+	collectionIdIdx: index('flashcard_collection_id_idx').on(t.collectionId),
+	collectionTypeIdx: index('flashcard_collection_type_idx').on(t.collectionId, t.type)
+}));
 
 export const tag = sqliteTable('tag', {
 	id: text('id')
@@ -71,7 +76,8 @@ export const flashcardTag = sqliteTable(
 	},
 	(t) => {
 		return {
-			pk: primaryKey({ columns: [t.flashcardId, t.tagId] })
+			pk: primaryKey({ columns: [t.flashcardId, t.tagId] }),
+			tagIdIdx: index('flashcard_tag_tag_id_idx').on(t.tagId)
 		};
 	}
 );
@@ -108,6 +114,9 @@ export const userFlashcardProgress = sqliteTable('user_flashcard_progress', {
 		.$onUpdate(() => new Date())
 		.notNull(),
 	isIgnored: integer('is_ignored', { mode: 'boolean' }).notNull().default(false)
-});
+}, (t) => ({
+	userFlashcardIdx: uniqueIndex('user_progress_user_card_idx').on(t.userId, t.flashcardId),
+	nextReviewAtIdx: index('user_progress_next_review_at_idx').on(t.nextReviewAt)
+}));
 
 export * from './auth.schema';

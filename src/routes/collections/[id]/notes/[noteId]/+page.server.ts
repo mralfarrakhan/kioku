@@ -40,6 +40,13 @@ export const load: PageServerLoad = async (event) => {
 	const note = notes[0];
 	const parsed = matter(note.definition);
 
+	const noteTagsResult = await db
+		.select({ name: tag.name })
+		.from(tag)
+		.innerJoin(flashcardTag, eq(tag.id, flashcardTag.tagId))
+		.where(eq(flashcardTag.flashcardId, note.id));
+	const noteTags = noteTagsResult.map((t) => t.name);
+
 	const allTagsResult = await db
 		.select({ name: tag.name })
 		.from(tag)
@@ -51,7 +58,10 @@ export const load: PageServerLoad = async (event) => {
 
 	return {
 		collection: coll,
-		note,
+		note: {
+			...note,
+			tags: noteTags
+		},
 		cleanContent: parsed.content,
 		allUniqueTags
 	};

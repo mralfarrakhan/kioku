@@ -121,8 +121,18 @@ export const load: PageServerLoad = async (event) => {
 			)
 		);
 
-	let countQuery = db
-		.select({ value: count() })
+	// Consolidate total count and type counts into a single query
+	const countConditions = [...conditions];
+	if (itemType === 'flashcard' || itemType === 'note') {
+		countConditions.pop(); // Remove the type filter so we can see counts for both types
+	}
+
+	let countsQuery = db
+		.select({
+			total: count(),
+			flashcardCount: sql<number>`count(CASE WHEN ${flashcard.type} = 'flashcard' THEN 1 END)`,
+			noteCount: sql<number>`count(CASE WHEN ${flashcard.type} = 'note' THEN 1 END)`
+		})
 		.from(flashcard)
 		.leftJoin(
 			userFlashcardProgress,
@@ -135,8 +145,6 @@ export const load: PageServerLoad = async (event) => {
 	if (q) {
 		const ftsQuery = q.replace(/"/g, '""');
 		// FTS5 MATCH operator format for trigram/unicode61
-		// By wrapping with quotes it escapes some keywords, but FTS5 query syntax is strict.
-		// A simple query parameterization string:
 		const matchQuery = `"${ftsQuery}"*`;
 
 		baseQuery = baseQuery.innerJoin(
@@ -144,7 +152,7 @@ export const load: PageServerLoad = async (event) => {
 			and(eq(flashcard.id, flashcardFts.id), sql`flashcard_fts MATCH ${matchQuery}`)
 		) as any;
 
-		countQuery = countQuery.innerJoin(
+		countsQuery = countsQuery.innerJoin(
 			flashcardFts,
 			and(eq(flashcard.id, flashcardFts.id), sql`flashcard_fts MATCH ${matchQuery}`)
 		) as any;
@@ -156,8 +164,18 @@ export const load: PageServerLoad = async (event) => {
 	else if (sort === 'z-a') orderClause = desc(flashcard.term);
 	else if (sort === 'relevance' && q) orderClause = asc(sql`rank`);
 
-	const countResult = await countQuery.where(and(...conditions));
-	const totalItems = countResult[0].value;
+	const [countsResultSummary] = await countsQuery.where(and(...countConditions));
+	const typeCounts = {
+		flashcard: countsResultSummary?.flashcardCount || 0,
+		note: countsResultSummary?.noteCount || 0
+	};
+
+	let totalItems = countsResultSummary?.total || 0;
+	if (itemType === 'flashcard') {
+		totalItems = typeCounts.flashcard;
+	} else if (itemType === 'note') {
+		totalItems = typeCounts.note;
+	}
 	const totalPages = Math.ceil(totalItems / pageSize) || 1;
 
 	const flashcardsRaw = await baseQuery
@@ -167,8 +185,6 @@ export const load: PageServerLoad = async (event) => {
 		.offset((page - 1) * pageSize);
 
 	// Fetch tags for these flashcards
-
-	
 	const flashcardIds = flashcardsRaw.map(f => f.id);
 	let tagsMap = new Map<string, string[]>();
 	
@@ -191,41 +207,6 @@ export const load: PageServerLoad = async (event) => {
 		...f,
 		tags: tagsMap.get(f.id) || []
 	}));
-
-	// Fetch type counts based on current filters (excluding the itemType filter itself, or including it?
-	// If we include it, then filtering by "Flashcards" will show 0 Notes. It's usually better to show counts of what's available *with the other filters*.
-	const countConditions = [...conditions];
-	if (itemType === 'flashcard' || itemType === 'note') {
-		countConditions.pop(); // Remove the type filter so we can see counts for both types
-	}
-
-	let typeCountsQueryBase = db
-		.select({ type: flashcard.type, value: count() })
-		.from(flashcard)
-		.leftJoin(
-			userFlashcardProgress,
-			and(
-				eq(flashcard.id, userFlashcardProgress.flashcardId),
-				eq(userFlashcardProgress.userId, event.locals.user.id)
-			)
-		);
-
-	if (q) {
-		const ftsQuery = q.replace(/"/g, '""');
-		const matchQuery = `"${ftsQuery}"*`;
-		typeCountsQueryBase = typeCountsQueryBase.innerJoin(
-			flashcardFts,
-			and(eq(flashcard.id, flashcardFts.id), sql`flashcard_fts MATCH ${matchQuery}`)
-		) as any;
-	}
-
-	const typeCountsResult = await typeCountsQueryBase
-		.where(and(...countConditions))
-		.groupBy(flashcard.type);
-	const typeCounts = {
-		flashcard: typeCountsResult.find((r) => r.type === 'flashcard')?.value || 0,
-		note: typeCountsResult.find((r) => r.type === 'note')?.value || 0
-	};
 
 	const uniqueTagsResult = await db.select({ name: tag.name }).from(tag).orderBy(tag.name);
 	const allUniqueTags = uniqueTagsResult.map(t => t.name);

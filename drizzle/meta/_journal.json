@@ -106,6 +106,13 @@
       "when": 1787122533173,
       "tag": "0014_boring_magneto",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1792930106944,
+      "tag": "0015_stiff_the_watchers",
+      "breakpoints": true
     }
   ]
 }

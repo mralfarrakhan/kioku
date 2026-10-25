@@ -21,6 +21,7 @@ export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, '/login');
 	}
+	const user = event.locals.user;
 
 	const id = event.params.id;
 	const db = getDb(event.platform?.env?.DB as D1Database);
@@ -29,7 +30,7 @@ export const load: PageServerLoad = async (event) => {
 	if (collections.length === 0) return redirect(302, '/');
 	const coll = collections[0];
 
-	if (coll.userId !== event.locals.user.id && !coll.isShared) {
+	if (coll.userId !== user.id && !coll.isShared) {
 		return redirect(302, '/');
 	}
 
@@ -78,7 +79,7 @@ export const load: PageServerLoad = async (event) => {
 				userFlashcardProgress,
 				and(
 					eq(userFlashcardProgress.flashcardId, flashcard.id),
-					eq(userFlashcardProgress.userId, event.locals.user.id)
+					eq(userFlashcardProgress.userId, user.id)
 				)
 			)
 			.where(and(...conditions as any[]));
@@ -92,7 +93,7 @@ export const load: PageServerLoad = async (event) => {
 				userFlashcardProgress,
 				and(
 					eq(userFlashcardProgress.flashcardId, flashcard.id),
-					eq(userFlashcardProgress.userId, event.locals.user.id)
+					eq(userFlashcardProgress.userId, user.id)
 				)
 			)
 			.where(and(...conditions as any[]))
@@ -137,7 +138,7 @@ export const load: PageServerLoad = async (event) => {
 					userFlashcardProgress,
 					and(
 						eq(userFlashcardProgress.flashcardId, flashcard.id),
-						eq(userFlashcardProgress.userId, event.locals.user.id)
+						eq(userFlashcardProgress.userId, user.id)
 					)
 				)
 				.where(inArray(flashcard.id, chunk))
@@ -318,7 +319,8 @@ export const load: PageServerLoad = async (event) => {
 			term: c.term,
 			correctAnswer: c.definition,
 			options,
-			type: c.type
+			type: c.type,
+			initialFluencyScore: progressMap.get(c.id)?.fluencyScore ?? 0
 		};
 	});
 
@@ -327,7 +329,8 @@ export const load: PageServerLoad = async (event) => {
 		term: c.term,
 		correctAnswer: c.definition,
 		options: [],
-		type: c.type
+		type: c.type,
+		initialFluencyScore: progressMap.get(c.id)?.fluencyScore ?? 0
 	}));
 
 	const finalQuizSession = shuffle([...quizSession, ...noteSession]);
@@ -340,6 +343,118 @@ export const load: PageServerLoad = async (event) => {
 };
 
 export const actions: Actions = {
+	batchRecordResults: async (event) => {
+		const user = event.locals.user;
+		if (!user) return fail(401, { message: 'Unauthorized' });
+
+		const formData = await event.request.formData();
+		const resultsRaw = formData.get('results')?.toString();
+		if (!resultsRaw) return fail(400, { message: 'Results are required' });
+
+		let answers: Array<{ flashcardId: string; isCorrect: boolean; responseTimeMs: number }> = [];
+		try {
+			answers = JSON.parse(resultsRaw);
+			if (!Array.isArray(answers) || answers.length === 0) {
+				return { success: true, count: 0 };
+			}
+		} catch (e) {
+			return fail(400, { message: 'Invalid results JSON' });
+		}
+
+		const db = getDb(event.platform?.env?.DB as D1Database);
+		const flashcardIds = answers.map((a) => a.flashcardId);
+
+		// Fetch existing progress for all answered cards in one query
+		const existingList = await db
+			.select()
+			.from(userFlashcardProgress)
+			.where(
+				and(
+					eq(userFlashcardProgress.userId, user.id),
+					inArray(userFlashcardProgress.flashcardId, flashcardIds)
+				)
+			);
+
+		const existingMap = new Map(existingList.map((p) => [p.flashcardId, p]));
+		const now = new Date();
+
+		const updatesOrInserts = answers.map((ans) => {
+			let quality = 1;
+			if (ans.isCorrect) {
+				if (ans.responseTimeMs <= QUIZ_CONFIG.fluency.fastResponseThresholdMs) quality = 5;
+				else if (ans.responseTimeMs <= QUIZ_CONFIG.fluency.averageResponseThresholdMs) quality = 4;
+				else quality = 3;
+			} else {
+				if (ans.responseTimeMs <= QUIZ_CONFIG.fluency.fastResponseThresholdMs) quality = 2;
+				else quality = 1;
+			}
+
+			const existing = existingMap.get(ans.flashcardId);
+			const currentEase = existing ? existing.easeFactor : 2.5;
+			const currentInterval = existing ? existing.interval : 0;
+			const currentRepetitions = existing ? existing.repetitions : 0;
+
+			let newEaseFactor = currentEase + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+			if (newEaseFactor < 1.3) newEaseFactor = 1.3;
+
+			let newInterval = 0;
+			let newRepetitions = 0;
+
+			if (quality >= 3) {
+				if (currentRepetitions === 0) newInterval = 1;
+				else if (currentRepetitions === 1) newInterval = 6;
+				else newInterval = Math.round(currentInterval * newEaseFactor);
+				newRepetitions = currentRepetitions + 1;
+			} else {
+				newRepetitions = 0;
+				newInterval = 1;
+			}
+
+			const oldTotalXp = existing ? existing.fluencyScore : 0;
+			let xpChange = 0;
+			if (quality === 5) xpChange = 25;
+			else if (quality === 4) xpChange = 15;
+			else if (quality === 3) xpChange = 10;
+			else if (quality === 2) xpChange = -10;
+			else xpChange = -20;
+
+			const newTotalXp = Math.max(0, oldTotalXp + xpChange);
+			const nextReview = new Date(now.getTime() + newInterval * 1000 * 60 * 60 * 24);
+
+			return {
+				userId: user.id,
+				flashcardId: ans.flashcardId,
+				fluencyScore: newTotalXp,
+				easeFactor: newEaseFactor,
+				interval: newInterval,
+				repetitions: newRepetitions,
+				lastReviewedAt: now,
+				nextReviewAt: nextReview
+			};
+		});
+
+		if (updatesOrInserts.length > 0) {
+			const batchQueries = updatesOrInserts.map((item) =>
+				db
+					.insert(userFlashcardProgress)
+					.values(item)
+					.onConflictDoUpdate({
+						target: [userFlashcardProgress.userId, userFlashcardProgress.flashcardId],
+						set: {
+							fluencyScore: item.fluencyScore,
+							easeFactor: item.easeFactor,
+							interval: item.interval,
+							repetitions: item.repetitions,
+							lastReviewedAt: item.lastReviewedAt,
+							nextReviewAt: item.nextReviewAt
+						}
+					})
+			);
+			await db.batch(batchQueries as any);
+		}
+
+		return { success: true, count: updatesOrInserts.length };
+	},
 	recordResult: async (event) => {
 		const user = event.locals.user;
 		if (!user) return fail(401, { message: 'Unauthorized' });

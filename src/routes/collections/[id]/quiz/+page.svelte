@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { deserialize } from '$app/forms';
 	import type { PageServerData } from './$types';
-	import { onMount } from 'svelte';
 	import { parseMarkdown, parseInlineMarkdown } from '$lib/markdown';
 	import ConfirmModal from '$lib/components/ConfirmModal.svelte';
 	import { goto } from '$app/navigation';
+	import { QUIZ_CONFIG } from '$lib/config';
 
 	let { data }: { data: PageServerData } = $props();
 
@@ -36,6 +35,31 @@
 
 	let confirmExitModal: ReturnType<typeof ConfirmModal> | undefined = $state();
 
+	// In-memory queue of completed answers to batch submit
+	let pendingResults = $state<Array<{ flashcardId: string; isCorrect: boolean; responseTimeMs: number }>>([]);
+	let isFlushing = false;
+
+	async function flushResults() {
+		if (isFlushing || pendingResults.length === 0) return;
+		isFlushing = true;
+
+		const toFlush = [...pendingResults];
+		const formData = new FormData();
+		formData.append('results', JSON.stringify(toFlush));
+
+		try {
+			await fetch('?/batchRecordResults', {
+				method: 'POST',
+				body: formData
+			});
+			pendingResults = pendingResults.slice(toFlush.length);
+		} catch (err) {
+			console.error('Failed to flush quiz results:', err);
+		} finally {
+			isFlushing = false;
+		}
+	}
+
 	function handleExit() {
 		if (currentIndex > 0 || isRetryPhase) {
 			confirmExitModal?.showModal();
@@ -60,56 +84,63 @@
 
 			if (!isCorrect) incorrectQueue.push(currentCard);
 
-			// Submit the result asynchronously
-			const formData = new FormData();
-			formData.append('flashcardId', currentCard.flashcardId);
-			formData.append('isCorrect', String(isCorrect));
-			formData.append('responseTimeMs', String(responseTimeMs));
-
-			const response = await fetch('?/recordResult', {
-				method: 'POST',
-				body: formData
+			pendingResults.push({
+				flashcardId: currentCard.flashcardId,
+				isCorrect,
+				responseTimeMs
 			});
 
-			const result = deserialize(await response.text());
+			// Optimistic client-side XP calculation (0ms latency animation)
+			const baseScore = currentCard.initialFluencyScore ?? 0;
+			let quality = 1;
+			if (isCorrect) {
+				if (responseTimeMs <= QUIZ_CONFIG.fluency.fastResponseThresholdMs) quality = 5;
+				else if (responseTimeMs <= QUIZ_CONFIG.fluency.averageResponseThresholdMs) quality = 4;
+				else quality = 3;
+			} else {
+				if (responseTimeMs <= QUIZ_CONFIG.fluency.fastResponseThresholdMs) quality = 2;
+				else quality = 1;
+			}
 
-			if (result.type === 'success' && result.data) {
-				oldScore = result.data.oldScore as number;
+			let xpChange = 0;
+			if (quality === 5) xpChange = 25;
+			else if (quality === 4) xpChange = 15;
+			else if (quality === 3) xpChange = 10;
+			else if (quality === 2) xpChange = -10;
+			else xpChange = -20;
 
-				ringTransition = 'none';
-				displayProgress = oldScore % 100;
-				displayLevel = Math.floor(oldScore / 100);
+			oldScore = baseScore;
+			ringTransition = 'none';
+			displayProgress = baseScore % 100;
+			displayLevel = Math.floor(baseScore / 100);
 
-				// short delay so the ring renders at the old score first, then animates to the new score
-				setTimeout(() => {
-					newScore = result.data?.newScore as number;
-					const oldSc = oldScore as number;
-					fluencyChange = newScore - oldSc;
+			setTimeout(() => {
+				newScore = Math.max(0, baseScore + xpChange);
+				fluencyChange = xpChange;
 
-					const newLevel = Math.floor(newScore / 100);
-					const newProgress = newScore % 100;
+				const newLevel = Math.floor(newScore / 100);
+				const newProgress = newScore % 100;
 
-					ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+				ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
 
-					if (newLevel !== displayLevel) {
-						delayBeforeNext += 1000; // Give extra time for multi-phase animation
-						displayProgress = newLevel > displayLevel ? 100 : 0;
+				if (newLevel !== displayLevel) {
+					delayBeforeNext += 1000; // Give extra time for multi-phase animation
+					displayProgress = newLevel > displayLevel ? 100 : 0;
+
+					setTimeout(() => {
+						ringTransition = 'none';
+						displayProgress = newLevel > displayLevel ? 0 : 100;
+						displayLevel = newLevel;
 
 						setTimeout(() => {
-							ringTransition = 'none';
-							displayProgress = newLevel > displayLevel ? 0 : 100;
-							displayLevel = newLevel;
-
-							setTimeout(() => {
-								ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-								displayProgress = newProgress;
-							}, 50);
-						}, 800); // Wait for first phase of animation
-					} else {
-						displayProgress = newProgress;
-					}
-				}, 50);
-			}
+							ringTransition = 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+							displayProgress = newProgress;
+						}, 50);
+					}, 800);
+				} else {
+					displayProgress = newProgress;
+				}
+			}, 50);
 		} else {
 			if (!isCorrect) incorrectQueue.push(currentCard);
 		}
@@ -122,6 +153,8 @@
 				quizCards = [...incorrectQueue];
 				incorrectQueue = [];
 				currentIndex = 0;
+			} else if (currentIndex >= quizCards.length) {
+				flushResults();
 			}
 
 			selectedOption = null;
@@ -153,15 +186,11 @@
 			timeMock = 1000;
 		}
 
-		// Fire and forget the API call for a snappy experience
-		const formData = new FormData();
-		formData.append('flashcardId', currentCard.flashcardId);
-		formData.append('isCorrect', String(isCorrectMock));
-		formData.append('responseTimeMs', String(timeMock));
-
-		fetch('?/recordResult', {
-			method: 'POST',
-			body: formData
+		// Queue the answer for batch flush
+		pendingResults.push({
+			flashcardId: currentCard.flashcardId,
+			isCorrect: isCorrectMock,
+			responseTimeMs: timeMock
 		});
 
 		if (quality === 1) {
@@ -176,14 +205,12 @@
 				quizCards = [...incorrectQueue];
 				incorrectQueue = [];
 				currentIndex = 0;
+			} else if (currentIndex >= quizCards.length) {
+				flushResults();
 			}
 			selectedOption = null;
-			isCorrect = null;
-			oldScore = null;
-			newScore = null;
-			fluencyChange = null;
 			questionStartTime = Date.now();
-		}, 150);
+		}, 300);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -215,6 +242,8 @@
 			quizCards = [...incorrectQueue];
 			incorrectQueue = [];
 			currentIndex = 0;
+		} else if (currentIndex >= quizCards.length) {
+			flushResults();
 		}
 
 		selectedOption = null;
@@ -231,10 +260,11 @@
 <ConfirmModal
 	bind:this={confirmExitModal}
 	title="Exit Quiz"
-	message="Are you sure you want to end this quiz early? Your progress in this session will not be completed."
+	message="Are you sure you want to end this quiz early? Your completed progress will be saved."
 	confirmText="Exit"
 	confirmStyle="danger"
-	onconfirm={() => {
+	onconfirm={async () => {
+		await flushResults();
 		goto(`/collections/${data.collection.id}`);
 	}}
 />

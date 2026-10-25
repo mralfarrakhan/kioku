@@ -13,7 +13,7 @@ declare global {
 		}
 
 		interface Locals {
-			user?: User;
+			user?: User & { type?: string };
 			session?: Session;
 			auth: ReturnType<typeof createAuth>;
 		}

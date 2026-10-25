@@ -12,8 +12,8 @@
 
 	let filteredSuggestions = $derived(
 		suggestedTags
-			.filter((t) => t.toLowerCase().includes(inputValue.toLowerCase()))
-			.filter((t) => !tags.includes(t))
+			.filter((t: string) => t.toLowerCase().includes(inputValue.toLowerCase()))
+			.filter((t: string) => !tags.includes(t))
 	);
 
 	function addTag(tag: string) {
@@ -41,7 +41,7 @@
 	}
 
 	function removeTag(tag: string) {
-		tags = tags.filter((t) => t !== tag);
+		tags = tags.filter((t: string) => t !== tag);
 	}
 
 	function onKeyDown(e: KeyboardEvent) {
